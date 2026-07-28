@@ -14,7 +14,9 @@ export default function ReactiaMiniLayout({
     <>
       <div className="ds-grain" aria-hidden />
       <Navbar />
-      <main className="flex flex-1 flex-col">{children}</main>
+      <main className="mt-16 flex flex-1 flex-col pb-20">
+        {children}
+      </main>
       <Footer />
     </>
   );
