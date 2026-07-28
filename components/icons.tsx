@@ -53,6 +53,64 @@ export function ChevronDown({ className, strokeWidth = 1.75 }: IconProps) {
   );
 }
 
+/* ── Circular status glyphs ──
+ * Filled discs with the mark knocked out in the surface colour, rather than a
+ * bare two-stroke ✕ / ✓. The bare strokes read as flat and angular next to the
+ * rounded cards; a disc is the roundest shape there is, and the solid fill lets
+ * the mark carry real colour weight. `holeColor` is the page surface showing
+ * through, so it has to match whatever the glyph sits on.
+ */
+export function CircleX({
+  className,
+  holeColor = 'var(--color-white)',
+}: {
+  className?: string;
+  holeColor?: string;
+}) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden className={className}>
+      <circle cx="12" cy="12" r="11" fill="currentColor" />
+      <path
+        d="M8.4 8.4l7.2 7.2M15.6 8.4l-7.2 7.2"
+        stroke={holeColor}
+        strokeWidth="2.6"
+        strokeLinecap="round"
+        fill="none"
+      />
+    </svg>
+  );
+}
+
+export function CircleCheck({
+  className,
+  holeColor = 'var(--color-white)',
+}: {
+  className?: string;
+  holeColor?: string;
+}) {
+  return (
+    <svg viewBox="0 0 24 24" aria-hidden className={className}>
+      <circle cx="12" cy="12" r="11" fill="currentColor" />
+      <path
+        d="M7.3 12.4l3.1 3.1 6.3-6.6"
+        stroke={holeColor}
+        strokeWidth="2.6"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        fill="none"
+      />
+    </svg>
+  );
+}
+
+export function Close({ className, strokeWidth = 1.75 }: IconProps) {
+  return (
+    <svg {...base(className)} strokeWidth={strokeWidth}>
+      <path d="M6 6l12 12M18 6L6 18" />
+    </svg>
+  );
+}
+
 export function Pencil({ className, strokeWidth = 1.75 }: IconProps) {
   return (
     <svg {...base(className)} strokeWidth={strokeWidth}>
@@ -156,6 +214,17 @@ export function Alert({ className, strokeWidth = 1.75 }: IconProps) {
     <svg {...base(className)} strokeWidth={strokeWidth}>
       <path d="M12 4.5l8.5 15H3.5L12 4.5z" />
       <path d="M12 10v4M12 17h.01" />
+    </svg>
+  );
+}
+
+/** AI sparkles — one large four-point star plus two small ones. */
+export function Sparkles({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={className}>
+      <path d="M11.2 2.6a.55.55 0 0 1 1.04 0l1.19 3.3a3.3 3.3 0 0 0 1.97 1.98l3.3 1.19a.55.55 0 0 1 0 1.04l-3.3 1.19a3.3 3.3 0 0 0-1.97 1.97l-1.19 3.3a.55.55 0 0 1-1.04 0l-1.19-3.3a3.3 3.3 0 0 0-1.97-1.97l-3.3-1.19a.55.55 0 0 1 0-1.04l3.3-1.19a3.3 3.3 0 0 0 1.97-1.98l1.19-3.3Z" />
+      <path d="M18.6 15.1a.4.4 0 0 1 .76 0l.5 1.4c.16.44.5.79.95.95l1.39.5a.4.4 0 0 1 0 .76l-1.4.5c-.44.16-.78.5-.94.95l-.5 1.39a.4.4 0 0 1-.76 0l-.5-1.4a1.65 1.65 0 0 0-.95-.94l-1.39-.5a.4.4 0 0 1 0-.76l1.4-.5c.44-.16.78-.5.94-.95l.5-1.4Z" />
+      <path d="M5 14.3a.35.35 0 0 1 .66 0l.36 1a1.4 1.4 0 0 0 .84.84l1 .36a.35.35 0 0 1 0 .66l-1 .36a1.4 1.4 0 0 0-.84.84l-.36 1a.35.35 0 0 1-.66 0l-.36-1a1.4 1.4 0 0 0-.84-.84l-1-.36a.35.35 0 0 1 0-.66l1-.36a1.4 1.4 0 0 0 .84-.84l.36-1Z" />
     </svg>
   );
 }

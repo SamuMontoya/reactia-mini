@@ -41,14 +41,23 @@ export default function Field({
   );
 
   return (
-    <div role={asGroup ? 'group' : undefined} aria-labelledby={asGroup ? labelId : undefined}>
+    // flex column with the control pushed to the bottom: inside a multi-column
+    // grid the cells stretch to the tallest one, so `mt-auto` lands every input
+    // on the same baseline even when one label wraps to two lines and its
+    // neighbour doesn't. In a single-column form there is no slack to
+    // distribute, so it behaves exactly as before.
+    <div
+      role={asGroup ? 'group' : undefined}
+      aria-labelledby={asGroup ? labelId : undefined}
+      className="flex flex-col"
+    >
       {heading}
       {hint && (
         <p id={`${id}-hint`} className="mt-0.5 text-sm text-stone">
           {hint}
         </p>
       )}
-      <div className="mt-2">{children}</div>
+      <div className="mt-auto pt-2">{children}</div>
       {error && (
         <p
           id={errorId}

@@ -45,4 +45,8 @@ export const scoreColor = (score: number): string =>
       : 'var(--color-signal-high)';
 
 export const scoreVeredicto = (score: number): string =>
-  score < 40 ? 'Hay mucho por ordenar' : score <= 70 ? 'Vas por buen camino' : 'Vas sólido';
+  score < 40
+    ? '¡Hay mucho por ordenar!'
+    : score <= 70
+      ? '¡Vas por buen camino!'
+      : '¡Vas sólido!';

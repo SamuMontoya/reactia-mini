@@ -142,41 +142,60 @@ function GenerandoContent() {
   };
 
   return (
-    <div className="relative flex flex-1 items-center justify-center overflow-hidden py-16">
+    // Full-bleed ink. This is the one screen in the funnel that is pure waiting,
+    // and the change of register does two things: it signals that work is
+    // happening rather than that the page stalled, and it makes arriving at the
+    // light result page feel like a payoff. Ink is the brand's own treatment for
+    // its "voice" moments, so it reads as intentional rather than as a loader
+    // someone dropped in.
+    <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-ink py-16">
       <div
-        className="ds-halo left-1/2 top-1/2 h-[30rem] w-[30rem] -translate-x-1/2 -translate-y-1/2"
         aria-hidden
+        className="ds-float pointer-events-none absolute left-1/2 top-1/2 h-[34rem] w-[34rem] rounded-full"
+        style={{
+          background:
+            'radial-gradient(circle, rgba(200,134,10,.22) 0%, rgba(200,134,10,.06) 42%, transparent 70%)',
+        }}
       />
 
       <div className="ds-container relative">
-        <div className="ds-card mx-auto max-w-md p-8 text-center sm:p-10">
+        <div className="mx-auto max-w-md text-center">
           {error ? (
             <>
-              <h1 className="font-display text-2xl font-bold text-ink">
+              <h1 className="font-display text-3xl font-bold text-white">
                 Algo salió mal
               </h1>
-              <p className="mt-2 text-base text-stone">{error}</p>
+              <p className="mt-3 text-lg text-dust">{error}</p>
               <button
                 type="button"
                 onClick={handleRetry}
-                className="ds-btn ds-btn-amber mt-6 w-full"
+                className="ds-btn ds-btn-amber ds-btn-lg mt-8 w-full sm:w-auto"
               >
                 Reintentar
               </button>
             </>
           ) : (
             <>
-              <Spinner />
-              <h1 className="mt-6 font-display text-2xl font-bold text-ink">
+              <Spinner className="h-14 w-14" />
+
+              <h1 className="mt-8 font-display text-section font-extrabold leading-tight tracking-tight text-white">
                 Estamos armando tu diagnóstico
               </h1>
+
+              {/* `key` on the message forces a remount each rotation, which is
+                  what lets the fade replay — without it React reuses the node and
+                  the animation only ever runs once. Fixed height so the block
+                  below doesn't jump when the line length changes. */}
               <p
                 aria-live="polite"
-                className="mt-2 text-base text-stone transition-opacity"
+                className="mt-4 flex min-h-[3.5rem] items-center justify-center text-lg text-dust"
               >
-                {ROTATING_MESSAGES[messageIndex]}
+                <span key={messageIndex} className="ds-fade-in">
+                  {ROTATING_MESSAGES[messageIndex]}
+                </span>
               </p>
-              <p className="mt-6 text-sm text-stone">
+
+              <p className="mt-4 text-sm text-stone">
                 Toma unos segundos. No cierres la página.
               </p>
             </>

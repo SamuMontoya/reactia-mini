@@ -28,6 +28,39 @@ export const AREA_LABELS: Record<AreaKey, string> = {
   metricas: 'Tus números',
 };
 
+/**
+ * What each area actually covers, in one plain sentence.
+ *
+ * Shown next to the area name on the result page: "Lo que ofreces" on its own
+ * doesn't tell the reader what was measured, so the name needs a line under it
+ * explaining what it means. Deliberately describes the area, not a programme —
+ * no months, no phases, no product names.
+ */
+export const AREA_DESCRIPCIONES: Record<AreaKey, string> = {
+  modelo: 'Qué vendes, a cuánto lo vendes y cuánto te queda de cada venta.',
+  oferta:
+    'Qué tan claro y distinto es lo que ofreces, y qué tan bien sabes a quién le sirve.',
+  clientes:
+    'De dónde llegan tus clientes y qué pasa desde que preguntan hasta que te pagan.',
+  operaciones: 'Quién saca adelante el trabajo del día a día y qué tanto depende de ti.',
+  procesos:
+    'Si está escrito cómo se hacen las cosas y si revisas cómo va el negocio cada semana.',
+  metricas: 'Qué tan claros tienes los números con los que tomas decisiones.',
+};
+
+/**
+ * One-word area names, for places where the full label doesn't fit — the radar
+ * chart axes, where "Tu forma de trabajar" ran off the edge of the SVG.
+ */
+export const AREA_LABELS_CORTOS: Record<AreaKey, string> = {
+  modelo: 'Negocio',
+  oferta: 'Oferta',
+  clientes: 'Clientes',
+  operaciones: 'Equipo',
+  procesos: 'Procesos',
+  metricas: 'Números',
+};
+
 export type QuestionType = 'opciones' | 'moneda' | 'escala' | 'texto';
 
 export type QuestionOption = {
@@ -55,6 +88,16 @@ export type DiagnosticoQuestion = {
   placeholder?: string;
   escala?: { bajo: string; alto: string };
   otro?: OtroConfig;
+  /** Hard character cap for 'texto' questions; also shows a live counter. */
+  maxLength?: number;
+  /** Rows for the textarea. */
+  filas?: number;
+  /**
+   * Blocks paste on a 'texto' question. Used where the answer is only useful if
+   * it is the owner's own words — a pasted block (a website blurb, something
+   * generated elsewhere) tells the scoring model nothing about them.
+   */
+  sinPegar?: boolean;
 };
 
 const SI_PARCIAL_NO: readonly QuestionOption[] = [
@@ -84,6 +127,18 @@ export const diagnosticoConfig: readonly DiagnosticoQuestion[] = [
       label: 'Cuéntanos qué vendes',
       placeholder: 'Ej: alquilo maquinaria por días',
     },
+  },
+  {
+    id: 'descripcion_negocio',
+    area: 'modelo',
+    titulo: 'Cuéntanos sobre tu negocio',
+    ayuda: 'Con dos o tres frases basta: ¿qué hace tu empresa y a quién le sirve?',
+    tipo: 'texto',
+    maxLength: 280,
+    filas: 4,
+    sinPegar: true,
+    placeholder:
+      'Ej: Vendemos software para restaurantes pequeños en Bogotá. Les ayudamos a controlar inventario y no perder plata en desperdicio.',
   },
   {
     id: 'ticket_promedio_cop',

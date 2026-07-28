@@ -26,10 +26,14 @@ export default function DiagnosticoPage() {
   // Set when the user jumped into a question from the review screen, so
   // "Guardar" returns there instead of continuing forward through the wizard.
   const [volverAResumen, setVolverAResumen] = useState(false);
+  // Which way the last step moved, so the entrance animation agrees with it.
+  const [direccion, setDireccion] = useState<'adelante' | 'atras'>('adelante');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [guardadoEn, setGuardadoEn] = useState<number | null>(null);
   const [draftCargado, setDraftCargado] = useState(false);
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const {
     control,
@@ -97,11 +101,23 @@ export default function DiagnosticoPage() {
       ) as Partial<Diagnostico>;
 
       const pasoGuardado = paso.tipo === 'pregunta' ? paso.index : TOTAL_PREGUNTAS;
-      setGuardadoEn(saveDraft(lead.leadId, { respuestas, paso: pasoGuardado }));
+      
+      setSaveStatus('saving');
+      try {
+        const timestamp = saveDraft(lead.leadId, { respuestas, paso: pasoGuardado });
+        setGuardadoEn(timestamp);
+        setSaveStatus('saved');
+      } catch {
+        setSaveStatus('error');
+      }
+      
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = setTimeout(() => setSaveStatus('idle'), 2000);
     }, 400);
 
     return () => {
       if (debounce.current) clearTimeout(debounce.current);
+      if (saveTimeoutRef.current) clearTimeout(saveTimeoutRef.current);
     };
   }, [values, lead, draftCargado, paso]);
 
@@ -174,6 +190,8 @@ export default function DiagnosticoPage() {
   const handleNext = async () => {
     if (!(await validarPasoActual())) return;
 
+    setDireccion('adelante');
+
     if (volverAResumen) {
       setVolverAResumen(false);
       setPaso(RESUMEN);
@@ -188,6 +206,8 @@ export default function DiagnosticoPage() {
   };
 
   const handlePrevious = () => {
+    setDireccion('atras');
+
     if (volverAResumen) {
       setVolverAResumen(false);
       setPaso(RESUMEN);
@@ -202,6 +222,9 @@ export default function DiagnosticoPage() {
 
   const handleEditFromResumen = (index: number) => {
     setVolverAResumen(true);
+    // Jumping back into a question to change it is a step backwards, whichever
+    // question it is.
+    setDireccion('atras');
     setPaso({ tipo: 'pregunta', index });
   };
 
@@ -227,7 +250,9 @@ export default function DiagnosticoPage() {
   return (
     <div className="flex flex-1 flex-col">
       {/* ── Progress ── */}
-      <div className="border-b border-dust bg-paper/85 backdrop-blur-md">
+      {/* No bottom rule: the progress bar itself is already a horizontal line,
+          so a divider under it read as a second, redundant one. */}
+      <div className="bg-paper/85 backdrop-blur-md">
         <div className="ds-container py-3.5">
           <div className="flex items-baseline justify-between gap-4">
             <p className="text-sm font-medium text-stone">
@@ -236,10 +261,40 @@ export default function DiagnosticoPage() {
                 : `Pregunta ${numeroPaso} de ${TOTAL_PREGUNTAS}`}
             </p>
             {guardadoEn && (
-              <p className="flex items-center gap-1.5 text-sm text-stone">
-                <Check className="h-4 w-4 text-signal-high" />
-                Guardado
-              </p>
+              <div className="flex items-center gap-2">
+                {saveStatus === 'saving' && (
+                  <span className="flex items-center gap-1.5 text-sm text-stone/80">
+                    <svg className="h-4 w-4 animate-spin text-amber" viewBox="0 0 24 24" fill="none" aria-hidden>
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                    </svg>
+                    Guardando...
+                  </span>
+                )}
+                {saveStatus === 'saved' && (
+                  <span className="flex items-center gap-1.5 text-sm text-signal-high">
+                    <Check className="h-4 w-4" />
+                    Guardado
+                  </span>
+                )}
+                {saveStatus === 'error' && (
+                  <span className="flex items-center gap-1.5 text-sm text-signal-low">
+                    <svg className="h-4 w-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" aria-hidden>
+                      <circle cx="12" cy="12" r="10" />
+                      <line x1="12" y1="8" x2="12" y2="12" />
+                      <line x1="12" y1="16" x2="12.01" y2="16" />
+                    </svg>
+                    <span>Error al guardar</span>
+                    <button
+                      type="button"
+                      onClick={() => setSaveStatus('idle')}
+                      className="text-xs underline hover:text-signal-low/80"
+                    >
+                      Reintentar
+                    </button>
+                  </span>
+                )}
+              </div>
             )}
           </div>
           <div
@@ -259,7 +314,7 @@ export default function DiagnosticoPage() {
       </div>
 
       {/* ── The question fills the screen instead of sitting in a narrow card ── */}
-      <div className="ds-container flex flex-1 flex-col justify-center py-10 sm:py-14">
+      <div className="ds-container flex flex-1 flex-col justify-center py-4 sm:py-6">
         {enResumen ? (
           <ResumenPaso
             values={getValues()}
@@ -269,7 +324,12 @@ export default function DiagnosticoPage() {
             submitError={submitError}
           />
         ) : (
-          <div key={paso.index} className="ds-animate-up mx-auto w-full max-w-2xl">
+          <div
+            key={paso.index}
+            className={`mx-auto w-full ${
+              direccion === 'adelante' ? 'ds-in-right' : 'ds-in-left'
+            }`}
+          >
             <QuestionRenderer
               question={diagnosticoConfig[paso.index]}
               control={control}
@@ -282,7 +342,7 @@ export default function DiagnosticoPage() {
 
       {/* ── Navigation ── */}
       {!enResumen && (
-        <div className="sticky bottom-0 border-t border-dust bg-paper/90 backdrop-blur-md">
+        <div className="sticky bottom-0 bg-paper/90 backdrop-blur-md">
           <div className="ds-container flex items-center justify-between gap-4 py-4">
             <button
               type="button"

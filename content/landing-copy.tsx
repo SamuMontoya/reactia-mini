@@ -9,9 +9,13 @@
  * anything, and qualification already happens quietly in the next step.
  */
 
+import { Compass, Sparkles, WhatsApp } from '@/components/icons';
+import React from 'react';
+
 type HowItWorksStep = {
   titulo: string;
   descripcion: string;
+  icon: React.ReactNode;
 };
 
 type LandingCopy = {
@@ -30,6 +34,9 @@ type LandingCopy = {
   cta: string;
   ctaNota: string;
   howItWorksTitulo: string;
+  howItWorksEyebrow?: string;
+  howItWorksHeadline?: string;
+  howItWorksSubheadline?: string;
   howItWorks: HowItWorksStep[];
   cierre: string;
 };
@@ -51,20 +58,26 @@ export const landingCopy: LandingCopy = {
   cta: 'Empezar mi diagnóstico',
   ctaNota: 'Es una versión corta del diagnóstico que hacemos con nuestros clientes.',
   howItWorksTitulo: 'Cómo funciona',
+  howItWorksEyebrow: 'Kreanding · Escáner de crecimiento',
+  howItWorksHeadline: 'Tres pasos para tu diagnóstico',
+  howItWorksSubheadline: 'Responde, descubre y actúa en menos de 10 minutos',
   howItWorks: [
     {
       titulo: 'Cuéntanos de ti',
       descripcion: 'Unos datos rápidos para saber de qué negocio estamos hablando.',
+      icon: <Compass className="h-6 w-6" />,
     },
     {
       titulo: 'Responde 11 preguntas',
       descripcion:
         'Una por pantalla. Se guardan solas, así que puedes salir y volver donde quedaste.',
+      icon: <Sparkles className="h-6 w-6" />,
     },
     {
       titulo: 'Recibe tu diagnóstico',
       descripcion:
         'Tu freno principal, cómo estás en cada área y el siguiente paso concreto.',
+      icon: <WhatsApp className="h-6 w-6" />,
     },
   ],
   cierre: 'Lo que descubras es tuyo, lo uses con nosotros o no.',

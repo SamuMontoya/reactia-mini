@@ -78,173 +78,215 @@ export default function GatekeepingPage() {
   };
 
   return (
-    <div className="relative flex flex-1 items-center justify-center overflow-hidden py-12">
-      <div
-        className="ds-halo left-1/2 top-[-16rem] h-[32rem] w-[32rem] -translate-x-1/2"
-        aria-hidden
-      />
+    // No min-height on the inner grid: forcing 100vh here, on top of the page
+    // padding plus the navbar and footer, is what made this screen scroll. The
+    // card's natural height now decides, and it fits.
+    <div className="relative flex flex-1 items-center py-6 lg:py-4">
+      {/* The halo gets its own clipping wrapper. Putting overflow-hidden on the
+          section root instead would also clip the dropdown popups, which sit
+          absolutely positioned inside the form. */}
+      <div className="pointer-events-none absolute inset-0 overflow-hidden" aria-hidden>
+        <div className="ds-halo left-1/2 top-[-18rem] h-[32rem] w-[32rem] -translate-x-1/2" />
+      </div>
 
-      <div className="ds-container relative">
-        <div className="mx-auto max-w-xl">
-          <header className="text-center">
-            <p className="ds-eyebrow">Paso 1 de 3</p>
-            <h1 className="mt-4 font-display text-section font-bold text-ink">
+      <div className="ds-container relative w-full">
+        <div className="grid items-center gap-8 lg:grid-cols-[22rem_minmax(0,1fr)] lg:gap-12">
+          {/* Left: the copy. `lg:mb-16` biases the vertically-centred block
+              upward — the margin counts toward centring, so the text sits about
+              half that distance above the true middle, which reads better
+              against a tall form card. */}
+          <div className="text-center lg:mb-16 lg:text-left">
+            {/* Amber wash, not a filled chip: see .ds-wash in globals.css. On a
+                form screen anything solid-amber would read as the submit button. */}
+            <p className="ds-wash ds-animate-up inline-block py-1.5 pl-3 pr-3.5">
+              <span className="ds-eyebrow">Paso 1 de 3</span>
+            </p>
+            <h1
+              className="ds-animate-up mt-4 font-display text-section font-bold text-ink"
+              style={{ animationDelay: '80ms' }}
+            >
               Cuéntanos de ti
             </h1>
-            <p className="mt-3 text-lg text-stone">
+            <p
+              className="ds-animate-up mt-3 text-lg text-stone"
+              style={{ animationDelay: '160ms' }}
+            >
               Cinco datos para entender de qué negocio estamos hablando. Toma menos de un
               minuto.
             </p>
-          </header>
+          </div>
 
-          <form
-            onSubmit={handleSubmit(onSubmit)}
-            noValidate
-            className="ds-card mt-8 space-y-6 p-6 sm:p-8"
-          >
-            <Field id="nombre" label="Tu nombre" error={errors.nombre?.message}>
-              <input
-                id="nombre"
-                type="text"
-                autoComplete="name"
-                placeholder="Ej: María Fernanda Gómez"
-                aria-invalid={errors.nombre ? true : undefined}
-                {...register('nombre')}
-                className="ds-input"
-              />
-            </Field>
-
-            <Field
-              id="empresa"
-              label="Nombre de la empresa"
-              error={errors.empresa?.message}
+          {/* Right: the form */}
+          <div className="ds-animate-up" style={{ animationDelay: '240ms' }}>
+            <form
+              onSubmit={handleSubmit(onSubmit)}
+              noValidate
+              className="ds-card space-y-4 p-6"
             >
-              <input
-                id="empresa"
-                type="text"
-                autoComplete="organization"
-                placeholder="Ej: Muebles del Norte"
-                aria-invalid={errors.empresa ? true : undefined}
-                {...register('empresa')}
-                className="ds-input"
-              />
-            </Field>
-
-            <Field
-              id="facturacion_rango"
-              label="¿Cuánto factura tu negocio al mes?"
-              hint="Un rango aproximado basta."
-              error={errors.facturacion_rango?.message}
-              asGroup
-            >
-              <Controller
-                name="facturacion_rango"
-                control={control}
-                render={({ field }) => (
-                  <Dropdown
-                    options={RANGOS_DROPDOWN}
-                    value={field.value}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    name={field.name}
-                    labelId="facturacion_rango-label"
-                    placeholder="Elige un rango"
-                    invalid={!!errors.facturacion_rango}
+              {/* Paired left-to-right so each row reads as one idea, and every
+                  field carries a hint line so the two columns are the same
+                  height and the inputs line up. */}
+              <div className="grid grid-cols-1 gap-x-6 gap-y-4 md:grid-cols-2">
+                <Field
+                  id="nombre"
+                  label="Tu nombre"
+                  hint="Para saber cómo llamarte."
+                  error={errors.nombre?.message}
+                >
+                  <input
+                    id="nombre"
+                    type="text"
+                    autoComplete="name"
+                    placeholder="Ej: María Fernanda Gómez"
+                    aria-invalid={errors.nombre ? true : undefined}
+                    {...register('nombre')}
+                    className="ds-input"
                   />
-                )}
-              />
-            </Field>
+                </Field>
 
-            <Field
-              id="anios_operacion"
-              label="¿Cuántos años lleva funcionando?"
-              hint="Si arrancaste este año, escribe 0."
-              error={errors.anios_operacion?.message}
-            >
-              <input
-                id="anios_operacion"
-                type="number"
-                min={0}
-                step={1}
-                inputMode="numeric"
-                placeholder="Ej: 3"
-                aria-invalid={errors.anios_operacion ? true : undefined}
-                {...register('anios_operacion', {
-                  // An empty field would otherwise arrive as NaN and report the
-                  // wrong error; undefined lets Zod say "escribe cuántos años".
-                  setValueAs: (value) =>
-                    value === '' || value === null ? undefined : Number(value),
-                })}
-                className="ds-input"
-              />
-            </Field>
-
-            <Field id="rol" label="¿Cuál es tu rol en el negocio?" error={errors.rol?.message} asGroup>
-              <Controller
-                name="rol"
-                control={control}
-                render={({ field }) => (
-                  <Dropdown
-                    options={ROLES}
-                    value={field.value}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    name={field.name}
-                    labelId="rol-label"
-                    placeholder="Elige tu rol"
-                    invalid={!!errors.rol}
+                <Field
+                  id="empresa"
+                  label="Nombre de la empresa"
+                  hint="El nombre con el que te conocen."
+                  error={errors.empresa?.message}
+                >
+                  <input
+                    id="empresa"
+                    type="text"
+                    autoComplete="organization"
+                    placeholder="Ej: Tech Solutions SAS"
+                    aria-invalid={errors.empresa ? true : undefined}
+                    {...register('empresa')}
+                    className="ds-input"
                   />
-                )}
-              />
-            </Field>
+                </Field>
 
-            <Field
-              id="whatsapp"
-              label="Tu WhatsApp"
-              hint="Solo para enviarte el enlace de tu diagnóstico."
-              error={errors.whatsapp?.message}
-            >
-              <Controller
-                name="whatsapp"
-                control={control}
-                render={({ field }) => (
-                  <PhoneInput
-                    id="whatsapp"
-                    value={field.value}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    invalid={!!errors.whatsapp}
-                    describedBy="whatsapp-hint"
+                <Field
+                  id="facturacion_rango"
+                  label="¿Cuánto factura tu negocio al mes?"
+                  hint="Un rango aproximado basta."
+                  error={errors.facturacion_rango?.message}
+                  asGroup
+                >
+                  <Controller
+                    name="facturacion_rango"
+                    control={control}
+                    render={({ field }) => (
+                      <Dropdown
+                        options={RANGOS_DROPDOWN}
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        labelId="facturacion_rango-label"
+                        placeholder="Elige un rango"
+                        invalid={!!errors.facturacion_rango}
+                      />
+                    )}
                   />
-                )}
-              />
-            </Field>
+                </Field>
 
-            {error && (
-              <p
-                role="alert"
-                className="rounded-[var(--radius-field)] border border-signal-low/30 bg-signal-low/5 p-4 text-base text-signal-low"
-              >
-                {error}
-              </p>
-            )}
+                <Field
+                  id="rol"
+                  label="¿Cuál es tu rol en el negocio?"
+                  hint="Qué haces dentro del negocio."
+                  error={errors.rol?.message}
+                  asGroup
+                >
+                  <Controller
+                    name="rol"
+                    control={control}
+                    render={({ field }) => (
+                      <Dropdown
+                        options={ROLES}
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        labelId="rol-label"
+                        placeholder="Elige tu rol"
+                        invalid={!!errors.rol}
+                      />
+                    )}
+                  />
+                </Field>
 
-            <div className="space-y-3 pt-1">
-              <button
-                type="submit"
-                disabled={isSubmitting}
-                className="ds-btn ds-btn-amber ds-btn-lg w-full"
-              >
-                {isSubmitting ? 'Guardando...' : 'Continuar a las preguntas'}
-                {!isSubmitting && <ArrowRight className="h-5 w-5" />}
-              </button>
+                <Field
+                  id="anios_operacion"
+                  label="¿Cuántos años lleva funcionando?"
+                  hint="Si arrancaste este año, escribe 0."
+                  error={errors.anios_operacion?.message}
+                >
+                  <input
+                    id="anios_operacion"
+                    type="number"
+                    min={0}
+                    step={1}
+                    inputMode="numeric"
+                    placeholder="Ej: 3"
+                    aria-invalid={errors.anios_operacion ? true : undefined}
+                    {...register('anios_operacion', {
+                      setValueAs: (value) =>
+                        value === '' || value === null ? undefined : Number(value),
+                    })}
+                    className="ds-input"
+                  />
+                </Field>
 
-              <p className="flex items-center justify-center gap-1.5 text-sm text-stone">
-                <Lock className="h-4 w-4" />
-                No compartimos tus datos con nadie.
-              </p>
-            </div>
-          </form>
+                <Field
+                  id="whatsapp"
+                  label="Tu WhatsApp"
+                  hint="Para enviarte tu diagnóstico."
+                  error={errors.whatsapp?.message}
+                >
+                  <Controller
+                    name="whatsapp"
+                    control={control}
+                    render={({ field }) => (
+                      <PhoneInput
+                        id="whatsapp"
+                        value={field.value}
+                        onChange={field.onChange}
+                        onBlur={field.onBlur}
+                        invalid={!!errors.whatsapp}
+                        describedBy="whatsapp-hint"
+                      />
+                    )}
+                  />
+                </Field>
+              </div>
+
+              {error && (
+                <p
+                  role="alert"
+                  className="rounded-[var(--radius-field)] border border-signal-low/30 bg-signal-low/5 p-4 text-base text-signal-low"
+                >
+                  {error}
+                </p>
+              )}
+
+              <div className="space-y-2.5">
+                <button
+                  type="submit"
+                  disabled={isSubmitting}
+                  className="ds-btn ds-btn-amber ds-btn-lg w-full"
+                >
+                  {isSubmitting ? 'Guardando...' : 'Continuar a las preguntas'}
+                  {!isSubmitting && <ArrowRight className="h-5 w-5" />}
+                </button>
+
+                {/* items-start + the nudge keeps the padlock on the first line
+                    of copy; items-center would float it between both lines. */}
+                <p className="flex items-start justify-center gap-1.5 text-sm text-stone">
+                  <Lock className="mt-[0.2em] h-4 w-4 shrink-0" />
+                  <span>
+                    No compartimos tus datos con nadie. Al continuar autorizas su manejo
+                    según nuestra política de privacidad.
+                  </span>
+                </p>
+              </div>
+            </form>
+          </div>
         </div>
       </div>
     </div>

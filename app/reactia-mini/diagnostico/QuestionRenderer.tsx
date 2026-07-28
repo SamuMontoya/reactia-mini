@@ -1,4 +1,5 @@
 'use client';
+import { useEffect, useState } from 'react';
 import { Controller, type Control, type FieldErrors } from 'react-hook-form';
 import type { Diagnostico } from '@/lib/schemas';
 import { AREA_LABELS, type DiagnosticoQuestion } from '@/content/diagnostico-config';
@@ -32,6 +33,14 @@ export default function QuestionRenderer({
   errors,
   currentValue,
 }: QuestionRendererProps) {
+  // Set when a paste is rejected on a `sinPegar` question, so we can explain
+  // why the text didn't appear instead of leaving the user thinking it broke.
+  const [pegadoBloqueado, setPegadoBloqueado] = useState(false);
+
+  useEffect(() => {
+    setPegadoBloqueado(false);
+  }, [question.id]);
+
   const labelId = `pregunta-${question.id}`;
   const error = errors[question.id]?.message as string | undefined;
   const otro = question.otro;
@@ -42,7 +51,11 @@ export default function QuestionRenderer({
 
   return (
     <div>
-      <p className="ds-eyebrow">{AREA_LABELS[question.area]}</p>
+      {/* Amber wash, never a filled chip — the wizard already uses solid amber
+          for the selected option and the progress bar. */}
+      <p className="ds-wash inline-block py-1.5 pl-3 pr-3.5">
+        <span className="ds-eyebrow">{AREA_LABELS[question.area]}</span>
+      </p>
 
       <h2
         id={labelId}
@@ -110,18 +123,60 @@ export default function QuestionRenderer({
           <Controller
             name={question.id}
             control={control}
-            render={({ field }) => (
-              <textarea
-                id={question.id}
-                rows={5}
-                placeholder={question.placeholder}
-                aria-invalid={error ? true : undefined}
-                value={(field.value as string | undefined) ?? ''}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                className="ds-input resize-y"
-              />
-            )}
+            render={({ field }) => {
+              const texto = (field.value as string | undefined) ?? '';
+              const max = question.maxLength;
+
+              return (
+                <div>
+                  <textarea
+                    id={question.id}
+                    rows={question.filas ?? 5}
+                    placeholder={question.placeholder}
+                    maxLength={max}
+                    aria-invalid={error ? true : undefined}
+                    aria-describedby={max ? `${question.id}-contador` : undefined}
+                    value={texto}
+                    onChange={field.onChange}
+                    onBlur={field.onBlur}
+                    onPaste={
+                      question.sinPegar
+                        ? (event) => {
+                            event.preventDefault();
+                            setPegadoBloqueado(true);
+                          }
+                        : undefined
+                    }
+                    onDrop={question.sinPegar ? (event) => event.preventDefault() : undefined}
+                    className="ds-input resize-y"
+                  />
+
+                  <div className="mt-1.5 flex items-start justify-between gap-3">
+                    {/* Announced politely rather than as an alert: the user did
+                        nothing wrong, they just need to know why nothing landed. */}
+                    <p
+                      aria-live="polite"
+                      className={`text-sm text-stone transition-opacity ${
+                        pegadoBloqueado ? 'opacity-100' : 'opacity-0'
+                      }`}
+                    >
+                      {pegadoBloqueado ? 'Escríbelo con tus palabras, sin pegar.' : ' '}
+                    </p>
+
+                    {max && (
+                      <p
+                        id={`${question.id}-contador`}
+                        className={`shrink-0 text-sm tabular-nums ${
+                          texto.length >= max ? 'text-signal-mid' : 'text-stone'
+                        }`}
+                      >
+                        {texto.length}/{max}
+                      </p>
+                    )}
+                  </div>
+                </div>
+              );
+            }}
           />
         )}
       </div>

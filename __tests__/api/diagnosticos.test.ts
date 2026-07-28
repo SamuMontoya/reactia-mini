@@ -39,6 +39,7 @@ jest.mock('@/lib/supabase', () => ({
 
 const validRespuestas = {
   modelo_tipo_negocio: 'servicio',
+  descripcion_negocio: 'Ofrecemos servicios de consultoría para pequeñas empresas.',
   ticket_promedio_cop: 500_000,
   oferta_escrita: 'si',
   avatar_claridad: 4,

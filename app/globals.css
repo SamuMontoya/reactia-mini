@@ -27,6 +27,14 @@
   --color-signal-mid: #b7791f;
   --color-signal-high: #4c6b3c;
 
+  /* Amber as a SURFACE, not as an action.
+     Solid amber already means three things in this product — button, selected
+     option, progress fill — so a tinted amber panel reads as clickable unless it
+     is visibly a different material. This wash is that material: light enough to
+     never be mistaken for a filled control, and always applied through .ds-wash
+     below so the non-button treatment travels with it. */
+  --color-amber-wash: #f6e9d1;
+
   /* ── Type families (wired to next/font in app/layout.tsx) ── */
   --font-display: var(--font-bricolage), "Helvetica Neue", Arial, sans-serif;
   --font-body: var(--font-dm-sans), "Helvetica Neue", Arial, sans-serif;
@@ -142,7 +150,18 @@
     width: 100%;
     max-width: 68rem; /* 1088px */
     margin-inline: auto;
-    padding-inline: 1.5rem;
+    /* The gutter belongs here, not on the pages. Navbar, main and footer all
+       use this class, so this is the single thing keeping them aligned — and
+       without it every surface sat flush against the viewport edge below
+       1088px, which is invisible on a desktop (the max-width centres the
+       content and fakes a margin) and obvious on a phone. */
+    padding-inline: 1.25rem;
+  }
+
+  @media (width >= 40rem) {
+    .ds-container {
+      padding-inline: 1.5rem;
+    }
   }
 
   /* ── Grain overlay — the brand's analog warmth. Mount once per page. ── */
@@ -296,6 +315,19 @@
     border-left: 2px solid var(--color-amber);
     padding-left: 1.125rem;
   }
+
+  /* ── Amber wash panel ──
+     The only sanctioned way to put amber behind content. The asymmetric radius
+     and the left rule are load-bearing, not decoration: a button in this system
+     is a filled pill with a shadow, so a flat panel with one squared edge and a
+     rule down its side cannot be confused for one. Never add rounded-full, a
+     shadow, or solid amber to this. */
+  .ds-wash {
+    background: var(--color-amber-wash);
+    border: 1px solid rgba(200, 134, 10, 0.22);
+    border-left: 2px solid var(--color-amber);
+    border-radius: 0 var(--radius-btn) var(--radius-btn) 0;
+  }
 }
 
 /* ── Motion ── */
@@ -320,6 +352,141 @@
   animation: ds-up 0.8s var(--ease-brand) both;
 }
 
+/* ── Scroll reveal ──
+   Applied by <Reveal>: the element waits, then rises into place when it enters
+   the viewport. Kept as CSS + a class toggle rather than a JS animation so the
+   reduced-motion block below can switch it off wholesale. */
+.ds-reveal {
+  opacity: 0;
+  transform: translateY(28px);
+  transition:
+    opacity 0.7s var(--ease-brand),
+    transform 0.7s var(--ease-brand);
+}
+.ds-reveal-in {
+  opacity: 1;
+  transform: none;
+}
+
+/* ── Full-bleed wipe ──
+   The closing section's dark background sweeps up over the paper as it scrolls
+   into view. clip-path rather than height/transform so nothing reflows. */
+.ds-wipe {
+  clip-path: inset(100% 0 0 0);
+  transition: clip-path 0.9s var(--ease-brand);
+}
+.ds-wipe-in {
+  clip-path: inset(0 0 0 0);
+}
+
+/* ── Attention pulse ──
+   An expanding ring on the closing CTA. Rings instead of a scale animation so
+   the button never shifts under the cursor mid-click. */
+@keyframes ds-pulse-ring {
+  0% {
+    box-shadow:
+      0 0 0 0 rgba(200, 134, 10, 0.5),
+      0 0 0 0 rgba(200, 134, 10, 0.28);
+  }
+  70% {
+    box-shadow:
+      0 0 0 16px rgba(200, 134, 10, 0),
+      0 0 0 30px rgba(200, 134, 10, 0);
+  }
+  100% {
+    box-shadow:
+      0 0 0 0 rgba(200, 134, 10, 0),
+      0 0 0 0 rgba(200, 134, 10, 0);
+  }
+}
+.ds-pulse {
+  animation: ds-pulse-ring 2.4s var(--ease-brand) infinite;
+}
+
+/* Light sweeping across the CTA, so it reads as "live" rather than just loud. */
+@keyframes ds-shine {
+  0% {
+    transform: translateX(-130%) skewX(-18deg);
+  }
+  55%,
+  100% {
+    transform: translateX(260%) skewX(-18deg);
+  }
+}
+.ds-shine::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  width: 38%;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(253, 252, 250, 0.42),
+    transparent
+  );
+  animation: ds-shine 3.2s var(--ease-brand) infinite;
+  pointer-events: none;
+}
+
+/* ── Direction-aware wizard transitions ──
+   Going forward slides in from the right, "Anterior" from the left. The old
+   version always rose upward, so stepping back felt identical to stepping
+   forward — the motion contradicted what the user had just done. */
+@keyframes ds-in-right {
+  from {
+    opacity: 0;
+    transform: translateX(34px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+@keyframes ds-in-left {
+  from {
+    opacity: 0;
+    transform: translateX(-34px);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+.ds-in-right {
+  animation: ds-in-right 0.45s var(--ease-brand) both;
+}
+.ds-in-left {
+  animation: ds-in-left 0.45s var(--ease-brand) both;
+}
+
+/* Crossfade for the rotating "generando" messages. */
+@keyframes ds-fade-in {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+.ds-fade-in {
+  animation: ds-fade-in 0.5s var(--ease-brand) both;
+}
+
+/* Slow drift on the closing section's halo, so the panel isn't static. */
+@keyframes ds-float {
+  0%,
+  100% {
+    transform: translate3d(-50%, 0, 0) scale(1);
+  }
+  50% {
+    transform: translate3d(-50%, -14px, 0) scale(1.07);
+  }
+}
+.ds-float {
+  animation: ds-float 9s ease-in-out infinite;
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,
@@ -329,6 +496,27 @@
     transition-duration: 0.01ms !important;
   }
   .ds-animate-up {
+    animation: none;
+    opacity: 1;
+    transform: none;
+  }
+  /* Reveals and wipes resolve to their final state instead of never arriving. */
+  .ds-reveal {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+  .ds-wipe {
+    clip-path: none;
+    transition: none;
+  }
+  .ds-shine::after {
+    display: none;
+  }
+  /* Directional slides and fades land immediately rather than being skipped. */
+  .ds-in-right,
+  .ds-in-left,
+  .ds-fade-in {
     animation: none;
     opacity: 1;
     transform: none;

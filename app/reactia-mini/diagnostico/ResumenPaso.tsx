@@ -5,7 +5,7 @@ import {
   describeAnswer,
   diagnosticoConfig,
 } from '@/content/diagnostico-config';
-import { ArrowRight, Pencil } from '@/components/icons';
+import { Pencil, Sparkles } from '@/components/icons';
 
 type ResumenPasoProps = {
   values: Partial<Diagnostico>;
@@ -32,7 +32,7 @@ export default function ResumenPaso({
   submitError,
 }: ResumenPasoProps) {
   return (
-    <div className="mx-auto w-full max-w-3xl">
+    <div className="mx-auto w-full max-w-4xl">
       <header className="text-center">
         <p className="ds-eyebrow">Último paso</p>
         <h2 className="mt-4 font-display text-section font-bold text-ink">
@@ -43,41 +43,52 @@ export default function ResumenPaso({
         </p>
       </header>
 
-      <ol className="mt-8 space-y-2.5">
+      {/* A grid, not a stack. Twelve full-width rows meant scrolling past the
+          "Generar" button to check anything; three columns fit all twelve
+          answers in roughly one screen, which is the whole point of a review
+          step. `auto-rows-fr` keeps every card in a row the same height so the
+          grid stays a grid even when one answer runs long. */}
+      <ol className="mt-8 grid auto-rows-fr gap-3 sm:grid-cols-2 lg:grid-cols-3">
         {diagnosticoConfig.map((question, index) => {
           const respuesta = describeAnswer(question, values);
 
           return (
-            <li key={question.id}>
+            <li key={question.id} className="contents">
+              {/* Staggered so twelve cards arrive as a sequence instead of all at
+                  once. 35ms a card keeps the whole grid under half a second. */}
               <button
                 type="button"
                 onClick={() => onEdit(index)}
-                className="group flex w-full items-start gap-4 rounded-[var(--radius-card)] border border-dust bg-white p-4 text-left transition-all duration-200 hover:border-amber hover:shadow-[var(--shadow-md)] sm:p-5"
+                style={{ animationDelay: `${index * 35}ms` }}
+                className="ds-animate-up group flex h-full w-full flex-col rounded-[var(--radius-card)] border border-dust bg-white p-4 text-left transition-all duration-200 hover:-translate-y-0.5 hover:border-amber hover:shadow-[var(--shadow-md)]"
               >
-                <span
-                  aria-hidden
-                  className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-full border border-dust font-display text-sm font-bold text-stone transition-colors group-hover:border-amber group-hover:text-amber"
-                >
-                  {index + 1}
-                </span>
-
-                <span className="min-w-0 flex-1">
-                  <span className="ds-label block">{AREA_LABELS[question.area]}</span>
-                  <span className="mt-1 block font-display text-base font-semibold text-ink">
-                    {question.titulo}
-                  </span>
-                  <span className="mt-1.5 block text-base whitespace-pre-wrap text-stone">
-                    {respuesta || 'Sin responder'}
+                <span className="flex items-center justify-between gap-2">
+                  <span className="ds-label truncate">{AREA_LABELS[question.area]}</span>
+                  <span
+                    aria-hidden
+                    className="flex shrink-0 items-center gap-1 text-xs text-stone/70 transition-colors group-hover:text-amber"
+                  >
+                    <Pencil className="h-3.5 w-3.5" />
+                    {index + 1}
                   </span>
                 </span>
 
-                <span
-                  aria-hidden
-                  className="mt-0.5 flex shrink-0 items-center gap-1.5 text-sm text-stone transition-colors group-hover:text-amber"
-                >
-                  <Pencil className="h-4 w-4" />
-                  <span className="hidden sm:inline">Cambiar</span>
+                <span className="mt-1.5 block font-display text-sm font-semibold leading-snug text-ink">
+                  {question.titulo}
                 </span>
+
+                {/* Long free-text answers are clamped so one verbose reply can't
+                    stretch its whole row; the full text is one click away. */}
+                <span
+                  className={`mt-auto block whitespace-pre-wrap pt-2 text-base ${
+                    respuesta
+                      ? 'line-clamp-4 text-ink'
+                      : 'italic text-signal-low'
+                  }`}
+                >
+                  {respuesta || 'Sin responder'}
+                </span>
+
                 <span className="sr-only">Editar esta respuesta</span>
               </button>
             </li>
@@ -101,8 +112,14 @@ export default function ResumenPaso({
           disabled={isSubmitting}
           className="ds-btn ds-btn-amber ds-btn-lg w-full sm:w-auto"
         >
-          {isSubmitting ? 'Generando...' : 'Generar mi diagnóstico'}
-          {!isSubmitting && <ArrowRight className="h-5 w-5" />}
+          {isSubmitting ? (
+            'Generando...'
+          ) : (
+            <>
+              <Sparkles className="h-5 w-5" />
+              Generar mi diagnóstico
+            </>
+          )}
         </button>
         <p className="text-sm text-stone">Tarda unos segundos. No cierres la página.</p>
       </div>

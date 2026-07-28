@@ -1,5 +1,7 @@
+'use client';
 import type { ScoringResult } from '@/lib/schemas';
-import { AREA_LABELS } from '@/content/diagnostico-config';
+import { AREA_LABELS, AREA_LABELS_CORTOS } from '@/content/diagnostico-config';
+import { useInView } from '@/lib/hooks/useInView';
 import { AREA_ORDER, type Area } from './scoreScale';
 
 type AreaRadarProps = {
@@ -7,8 +9,14 @@ type AreaRadarProps = {
   cuelloBotella: Area;
 };
 
-const CENTER = 130;
-const MAX_R = 84;
+// The viewBox is wider than it is tall on purpose: the axis labels sit outside
+// the hexagon, and the horizontal ones need room that a square box doesn't have
+// — that is what was clipping "Números" and "Procesos" at the edges.
+const VIEW_W = 300;
+const VIEW_H = 260;
+const CX = VIEW_W / 2;
+const CY = 126;
+const MAX_R = 78;
 const LABEL_R = MAX_R + 24;
 const RINGS = [25, 50, 75, 100];
 
@@ -18,8 +26,8 @@ const angleFor = (index: number) => (-90 + index * 60) * (Math.PI / 180);
 const pointAt = (index: number, radius: number) => {
   const angle = angleFor(index);
   return {
-    x: CENTER + Math.cos(angle) * radius,
-    y: CENTER + Math.sin(angle) * radius,
+    x: CX + Math.cos(angle) * radius,
+    y: CY + Math.sin(angle) * radius,
   };
 };
 
@@ -31,8 +39,8 @@ const polygon = (radiusFor: (index: number) => number) =>
 
 const anchorFor = (index: number): 'start' | 'middle' | 'end' => {
   const { x } = pointAt(index, LABEL_R);
-  if (Math.abs(x - CENTER) < 2) return 'middle';
-  return x > CENTER ? 'start' : 'end';
+  if (Math.abs(x - CX) < 2) return 'middle';
+  return x > CX ? 'start' : 'end';
 };
 
 /**
@@ -51,9 +59,12 @@ export default function AreaRadar({ scores, cuelloBotella }: AreaRadarProps) {
     (area) => `${AREA_LABELS[area]}: ${Math.round(scores[area] ?? 0)}`
   ).join('. ');
 
+  const { ref, inView } = useInView<SVGSVGElement>();
+
   return (
     <svg
-      viewBox="0 0 260 260"
+      ref={ref}
+      viewBox={`0 0 ${VIEW_W} ${VIEW_H}`}
       className="h-full w-full"
       role="img"
       aria-label={`Puntaje por área. ${descripcion}`}
@@ -76,8 +87,8 @@ export default function AreaRadar({ scores, cuelloBotella }: AreaRadarProps) {
         return (
           <line
             key={area}
-            x1={CENTER}
-            y1={CENTER}
+            x1={CX}
+            y1={CY}
             x2={end.x}
             y2={end.y}
             stroke="var(--color-dust)"
@@ -87,7 +98,10 @@ export default function AreaRadar({ scores, cuelloBotella }: AreaRadarProps) {
         );
       })}
 
-      {/* The score shape */}
+      {/* The score shape. Grows out of the centre when the chart scrolls into
+          view — the silhouette is the whole point of a radar, so it should be
+          seen forming rather than arriving pre-drawn. transform-box/origin keep
+          the scale anchored to the hexagon's centre, not the SVG's. */}
       <polygon
         points={polygon((index) => (MAX_R * (scores[AREA_ORDER[index]] ?? 0)) / 100)}
         fill="var(--color-amber)"
@@ -95,9 +109,17 @@ export default function AreaRadar({ scores, cuelloBotella }: AreaRadarProps) {
         stroke="var(--color-amber)"
         strokeWidth="2"
         strokeLinejoin="round"
+        style={{
+          transform: inView ? 'scale(1)' : 'scale(0.04)',
+          opacity: inView ? 1 : 0,
+          transformOrigin: `${CX}px ${CY}px`,
+          transition:
+            'transform 1s var(--ease-brand), opacity 0.4s var(--ease-brand)',
+        }}
       />
 
-      {/* Vertices, with the bottleneck emphasised */}
+      {/* Vertices, with the bottleneck emphasised. They pop in after the shape
+          has finished growing, so they read as landing on it. */}
       {AREA_ORDER.map((area, index) => {
         const score = scores[area] ?? 0;
         const { x, y } = pointAt(index, (MAX_R * score) / 100);
@@ -112,6 +134,12 @@ export default function AreaRadar({ scores, cuelloBotella }: AreaRadarProps) {
             fill={esCuello ? 'var(--color-signal-low)' : 'var(--color-amber)'}
             stroke="var(--color-white)"
             strokeWidth="1.5"
+            style={{
+              opacity: inView ? 1 : 0,
+              transform: inView ? 'scale(1)' : 'scale(0)',
+              transformOrigin: `${x}px ${y}px`,
+              transition: `opacity 0.3s var(--ease-brand) ${700 + index * 70}ms, transform 0.4s var(--ease-brand) ${700 + index * 70}ms`,
+            }}
           />
         );
       })}
@@ -134,7 +162,7 @@ export default function AreaRadar({ scores, cuelloBotella }: AreaRadarProps) {
               fontWeight="500"
               fill={esCuello ? 'var(--color-signal-low)' : 'var(--color-stone)'}
             >
-              {AREA_LABELS[area]}
+              {AREA_LABELS_CORTOS[area]}
             </text>
             <text
               x={x}

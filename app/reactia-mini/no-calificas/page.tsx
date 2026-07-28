@@ -68,7 +68,7 @@ function NoCualificasContent() {
   return (
     <div className="flex flex-1 items-center justify-center py-16">
       <div className="ds-container">
-        <div className="ds-card mx-auto max-w-md p-8 sm:p-10">
+        <div className="ds-card ds-animate-up mx-auto max-w-md p-8 sm:p-10">
           <h1 className="font-display text-2xl font-bold text-ink">
             Todavía estás empezando
           </h1>

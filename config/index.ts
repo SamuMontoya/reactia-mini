@@ -3,11 +3,12 @@ export const config = {
   SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '',
   GROQ_API_KEY: process.env.GROQ_API_KEY || '',
   UMAMI_ID: process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID || '',
-  // Destination of the result-page CTA. MUST be set before production: with the
-  // placeholder below, the button renders disabled with an explanatory note
-  // rather than sending anyone to a dead wa.me link. Digits only, country code
-  // included, no plus sign — e.g. 573001234567.
-  WHATSAPP_NUMBER: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '',
+  // Destination of every "hablar con un experto" link. The fallback is the
+  // number that used to be hard-coded inside the navbar — keeping it here means
+  // there is one place to change it, and the env var overrides it per
+  // environment without a code change.
+  // Digits only, country code included, no plus sign — e.g. 573001234567.
+  WHATSAPP_NUMBER: process.env.NEXT_PUBLIC_WHATSAPP_NUMBER || '573125345323',
 };
 
 /** Placeholder value that means "not configured yet". */

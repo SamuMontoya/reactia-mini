@@ -56,6 +56,11 @@ export const diagnosticoSchema = z
       message: 'Selecciona una opción',
     }),
     modelo_tipo_negocio_otro: otroTexto.optional(),
+    descripcion_negocio: z
+      .string()
+      .trim()
+      .min(10, 'Cuéntanos un poco más — con una o dos frases basta')
+      .max(280, 'Máximo 280 caracteres'),
     ticket_promedio_cop: z
       .number({ message: 'Escribe cuánto te paga un cliente' })
       .min(1, 'Debe ser mayor a cero'),

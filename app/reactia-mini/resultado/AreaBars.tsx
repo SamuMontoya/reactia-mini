@@ -1,3 +1,5 @@
+'use client';
+import { useInView } from '@/lib/hooks/useInView';
 import type { ScoringResult } from '@/lib/schemas';
 import { AREA_LABELS } from '@/content/diagnostico-config';
 import { AREA_ICONS } from '@/components/icons';
@@ -16,10 +18,11 @@ type AreaBarsProps = {
  */
 export default function AreaBars({ scores, cuelloBotella }: AreaBarsProps) {
   const filas = [...AREA_ORDER].sort((a, b) => (scores[a] ?? 0) - (scores[b] ?? 0));
+  const { ref, inView } = useInView<HTMLUListElement>();
 
   return (
-    <ul className="space-y-3.5">
-      {filas.map((area) => {
+    <ul ref={ref} className="space-y-3.5">
+      {filas.map((area, index) => {
         const score = Math.round(scores[area] ?? 0);
         const Icon = AREA_ICONS[area];
         const esCuello = area === cuelloBotella;
@@ -49,9 +52,16 @@ export default function AreaBars({ scores, cuelloBotella }: AreaBarsProps) {
               </span>
             </div>
             <div className="mt-1.5 h-2 w-full overflow-hidden rounded-full bg-dust/50">
+              {/* Fills left-to-right when the list scrolls into view, staggered
+                  worst-first. The stagger is what makes it read as a ranking
+                  being counted out rather than six bars appearing at once. */}
               <div
-                className="h-full rounded-full"
-                style={{ width: `${score}%`, background: scoreColor(score) }}
+                className="h-full rounded-full transition-[width] duration-[900ms] ease-[var(--ease-brand)]"
+                style={{
+                  width: inView ? `${score}%` : '0%',
+                  background: scoreColor(score),
+                  transitionDelay: `${index * 70}ms`,
+                }}
               />
             </div>
           </li>

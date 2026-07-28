@@ -26,7 +26,7 @@ REGLAS DE LENGUAJE:
 INSTRUCCIONES:
 1. Evalúa cada una de las 6 áreas (modelo, oferta, clientes, operaciones, procesos, metricas) con un score de 0 a 100, usando los pesos de arriba como guía de qué tan crítica es cada respuesta dentro de su área.
 2. "cuello_botella" es el área con el score MÁS BAJO.
-3. "proximo_paso" es un texto corto y accionable (máximo 2 frases), mapeado al mes de Reactia que resuelve ese cuello de botella y anclado a lo que la persona escribió.
+3. "proximo_paso" es un texto corto y accionable (máximo 2 frases) que resuelve ese cuello de botella, anclado a lo que la persona escribió. NO lo etiquetes con meses, fases ni nombres de programa: nada de "Mes 1", "Mes 3 ·", "Fase 2". Es una acción, no un plan con calendario.
 4. "benchmark" es una frase cualitativa que compara al negocio con patrones típicos en su etapa (ej: "El 68% de los negocios en tu etapa está atascado en lo que ofrecen").
 5. "kpis_starter" es un array de EXACTAMENTE 4 strings con los números que este negocio debería estar mirando, nombrados en español simple.
 

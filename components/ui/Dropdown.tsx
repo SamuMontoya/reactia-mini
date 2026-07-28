@@ -50,6 +50,8 @@ export default function Dropdown({
 
   const [open, setOpen] = useState(false);
   const [activeIndex, setActiveIndex] = useState(-1);
+  // Whether the popup opens upward, decided at open time (see openList).
+  const [dropUp, setDropUp] = useState(false);
 
   const rootRef = useRef<HTMLDivElement>(null);
   const triggerRef = useRef<HTMLButtonElement>(null);
@@ -73,10 +75,24 @@ export default function Dropdown({
 
   const openList = useCallback(
     (startAt?: number) => {
+      // Decide the direction before opening, from an estimate of the popup's
+      // height, so it never paints in the wrong place and never opens off the
+      // bottom of the screen. Estimating (rather than measuring after mount)
+      // keeps this synchronous — one option row is ~62px with a hint line, ~46
+      // without, and the list is capped at max-h-72 (288px).
+      const trigger = triggerRef.current?.getBoundingClientRect();
+      if (trigger) {
+        const perOption = options.some((option) => option.hint) ? 62 : 46;
+        const estimatedHeight = Math.min(288, options.length * perOption + 12);
+        const spaceBelow = window.innerHeight - trigger.bottom - 12;
+        const spaceAbove = trigger.top - 12;
+        setDropUp(estimatedHeight > spaceBelow && spaceAbove > spaceBelow);
+      }
+
       setActiveIndex(startAt ?? (selectedIndex >= 0 ? selectedIndex : 0));
       setOpen(true);
     },
-    [selectedIndex]
+    [selectedIndex, options]
   );
 
   const commit = useCallback(
@@ -223,7 +239,9 @@ export default function Dropdown({
           aria-labelledby={labelId}
           tabIndex={-1}
           onKeyDown={handleKeyDown}
-          className="absolute z-30 mt-2 max-h-72 w-full overflow-y-auto rounded-[var(--radius-field)] border border-dust bg-white p-1.5 shadow-[var(--shadow-lg)]"
+          className={`absolute z-30 max-h-72 w-full overflow-y-auto rounded-[var(--radius-field)] border border-dust bg-white p-1.5 shadow-[var(--shadow-lg)] ${
+            dropUp ? 'bottom-full mb-2' : 'top-full mt-2'
+          }`}
         >
           {options.map((option, index) => {
             const isSelected = option.value === value;
