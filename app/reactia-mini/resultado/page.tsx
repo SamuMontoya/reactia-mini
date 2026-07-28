@@ -126,7 +126,7 @@ function ResultadoContent() {
             {/* Overall score */}
             <section className="ds-card flex flex-col justify-center p-6 lg:col-span-1">
               <p className="ds-eyebrow text-center">Puntaje general</p>
-              <div className="mt-5">
+              <div className="mt-5 flex justify-center">
                 <ScoreGauge score={overallScore} />
               </div>
               <p className="mt-4 text-center text-sm text-stone">
@@ -148,7 +148,7 @@ function ResultadoContent() {
             <section className="ds-card p-6 sm:p-8 lg:col-span-3">
               <p className="ds-eyebrow">Cómo estás en cada área</p>
               <div className="mt-4 grid items-center gap-6 sm:grid-cols-2">
-                <div className="mx-auto aspect-square w-full max-w-[19rem]">
+                <div className="mx-auto w-full max-w-[16rem] sm:max-w-[19rem]">
                   <AreaRadar
                     scores={resultado.scores}
                     cuelloBotella={resultado.cuello_botella}
