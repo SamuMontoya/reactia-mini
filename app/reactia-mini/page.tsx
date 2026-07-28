@@ -46,7 +46,7 @@ export default function ReactiaMiniLandingPage() {
           }}
         />
 
-        <div className="ds-container relative py-12 lg:py-16">
+        <div className="ds-container relative py-8 lg:py-10">
           <div className="lg:grid lg:grid-cols-2 lg:items-center lg:gap-12">
             {/* ── Left: the promise ── */}
             <div className="text-center lg:text-left">
@@ -142,20 +142,20 @@ export default function ReactiaMiniLandingPage() {
 
       {/* ══ Cómo funciona — centered, modern cards ══ */}
       <section
-        className="ds-container ds-animate-up py-10 lg:py-16"
+        className="ds-container ds-animate-up py-6 lg:py-10"
         style={{ animationDelay: '0.4s' }}
         aria-label="Cómo funciona"
       >
         <div className="mx-auto max-w-[72rem]">
           <div
-            className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
+            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
             role="list"
             aria-label="Pasos del diagnóstico"
           >
             {landingCopy.howItWorks.map((step, index) => (
               <article
                 key={step.titulo}
-                className="group relative overflow-hidden rounded-[var(--radius-card)] bg-white p-6 shadow-[var(--shadow-sm)] transition-all duration-500 ease-[var(--ease-brand)] hover:-translate-y-1 hover:shadow-[var(--shadow-lg)]"
+                className="group relative overflow-hidden rounded-[var(--radius-card)] bg-white p-5 shadow-[var(--shadow-sm)] transition-all duration-500 ease-[var(--ease-brand)] hover:-translate-y-1 hover:shadow-[var(--shadow-lg)] min-h-[280px] flex flex-col"
                 style={{ transitionDelay: `${0.24 + index * 0.08}s` }}
               >
                 {/* Amber top accent line — brand's signature */}
@@ -164,31 +164,21 @@ export default function ReactiaMiniLandingPage() {
                   className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                 />
 
-                {/* Amber wash background glow — subtle brand warmth */}
-                <span
-                  aria-hidden
-                  className="ds-float pointer-events-none absolute inset-0 bg-gradient-to-br from-amber/5 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500"
-                  style={{
-                    borderRadius: 'inherit',
-                    animationDelay: `${index * 1.5}s`,
-                  }}
-                />
-
                 {/* Ghost number — brand's "ghost number" motif, now with amber tint on hover */}
                 <span
                   aria-hidden
-                  className="pointer-events-none absolute right-4 top-4 select-none font-display text-7xl font-extrabold leading-none text-dust/20 group-hover:text-amber/30 transition-colors duration-500"
+                  className="pointer-events-none absolute right-4 bottom-4 select-none font-display text-7xl font-extrabold leading-none text-dust/20 group-hover:text-amber/30 transition-colors duration-500"
                 >
                   {index + 1}
                 </span>
 
-                {/* Step badge with amber accent */}
-                <span className="ds-label relative inline-block px-3 py-1 rounded-full bg-amber/10 text-amber font-semibold">
+                {/* Step badge with amber accent - top right */}
+                <span className="ds-label absolute right-4 top-4 px-3 py-1 rounded-full bg-amber/10 text-amber font-semibold">
                   Paso {index + 1}
                 </span>
 
                 {/* Icon container with amber halo effect */}
-                <div className="relative mt-5 flex h-14 w-14 items-center justify-center rounded-xl bg-white border border-dust transition-all duration-300 group-hover:border-amber/50 group-hover:shadow-[0_0_0_4px_rgba(200,134,10,0.15)]">
+                <div className="relative mt-2 flex h-12 w-12 items-center justify-center rounded-xl bg-white border border-dust transition-all duration-300 group-hover:border-amber/50 group-hover:shadow-[0_0_0_4px_rgba(200,134,10,0.15)]">
                   <span
                     aria-hidden
                     className="pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-br from-amber/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
@@ -200,10 +190,10 @@ export default function ReactiaMiniLandingPage() {
                   )}
                 </div>
 
-                <h3 className="relative mt-4 font-display text-xl font-bold text-ink group-hover:text-amber transition-colors duration-300">
+                <h3 className="relative mt-3 font-display text-lg font-bold text-ink group-hover:text-amber transition-colors duration-300">
                   {step.titulo}
                 </h3>
-                <p className="relative mt-2 text-sm text-stone leading-relaxed">
+                <p className="relative mt-1.5 text-sm text-stone leading-relaxed flex-1">
                   {step.descripcion}
                 </p>
 
