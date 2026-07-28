@@ -155,7 +155,7 @@ export default function ReactiaMiniLandingPage() {
             {landingCopy.howItWorks.map((step, index) => (
               <article
                 key={step.titulo}
-                className="group relative ds-reveal overflow-hidden rounded-[var(--radius-card)] bg-white p-6 shadow-[var(--shadow-sm)] transition-all duration-500 ease-[var(--ease-brand)] hover:-translate-y-1 hover:shadow-[var(--shadow-lg)]"
+                className="group relative overflow-hidden rounded-[var(--radius-card)] bg-white p-6 shadow-[var(--shadow-sm)] transition-all duration-500 ease-[var(--ease-brand)] hover:-translate-y-1 hover:shadow-[var(--shadow-lg)]"
                 style={{ transitionDelay: `${0.24 + index * 0.08}s` }}
               >
                 {/* Amber top accent line — brand's signature */}
