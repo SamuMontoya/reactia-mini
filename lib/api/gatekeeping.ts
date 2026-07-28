@@ -1,0 +1,44 @@
+import { supabase } from '@/lib/supabase';
+import { gatekeepingSchema, type Gatekeeping } from '@/lib/schemas';
+import { rangoACop } from '@/content/facturacion-rangos';
+
+/** Monthly revenue at or above this qualifies for the paid program. */
+export const UMBRAL_FACTURACION_COP = 5_000_000;
+/** Years operating at or above this qualifies. Below it, `califica` is false. */
+export const MINIMO_ANIOS_OPERACION = 1;
+
+export const submitGatekeeping = async (data: Gatekeeping) => {
+  const validData = gatekeepingSchema.parse(data);
+
+  // Derived here, not sent by the client: the form only offers bands, so the
+  // stored figure is always the band's floor (see content/facturacion-rangos.ts).
+  const facturacionCop = rangoACop(validData.facturacion_rango);
+
+  // Failing any of these means `califica: false` — it does NOT mean the lead is
+  // turned away. Everyone continues to the diagnóstico; `califica` only records
+  // who is ready for the paid program.
+  const califica =
+    facturacionCop >= UMBRAL_FACTURACION_COP &&
+    validData.anios_operacion >= MINIMO_ANIOS_OPERACION &&
+    validData.rol === 'dueño_ceo';
+
+  const { data: lead, error } = await supabase
+    .from('leads')
+    .insert({
+      facturacion_mensual_cop: facturacionCop,
+      facturacion_rango: validData.facturacion_rango,
+      anios_operacion: validData.anios_operacion,
+      rol: validData.rol,
+      nombre: validData.nombre,
+      empresa: validData.empresa,
+      whatsapp: validData.whatsapp,
+      califica,
+      estado: califica ? 'calificado_pendiente' : 'no_calificado',
+    })
+    .select('id')
+    .single();
+
+  if (error) throw new Error(error.message);
+
+  return { leadId: lead.id, califica };
+};
