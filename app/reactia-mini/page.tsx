@@ -147,16 +147,6 @@ export default function ReactiaMiniLandingPage() {
         aria-label="Cómo funciona"
       >
         <div className="mx-auto max-w-[72rem]">
-          <div className="mx-auto max-w-2xl text-center mb-10 lg:mb-12">
-            <p className="ds-eyebrow ds-animate-up">{landingCopy.howItWorksEyebrow || 'Cómo funciona'}</p>
-            <h2 className="ds-animate-up mt-2 font-display text-3xl font-bold text-ink lg:text-4xl" style={{ animationDelay: '0.08s' }}>
-              {landingCopy.howItWorksHeadline || 'Tres pasos para tu diagnóstico'}
-            </h2>
-            <p className="ds-animate-up mt-3 text-stone lg:text-lg" style={{ animationDelay: '0.16s' }}>
-              {landingCopy.howItWorksSubheadline || 'Responde, descubre y actúa en menos de 10 minutos'}
-            </p>
-          </div>
-
           <div
             className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3"
             role="list"
