@@ -116,17 +116,15 @@ function ResultadoContent() {
           </p>
         </header>
 
-        {/* Everything below is one grid — no tabs. The old version hid three of
-            four sections behind clicks, so most people only ever saw the gauge. */}
         <div
           className={`mt-10 ${
             isBlocked ? 'pointer-events-none select-none blur-[5px]' : ''
           }`}
           aria-hidden={isBlocked}
         >
-          <div className="grid gap-4 lg:grid-cols-5">
+          <div className="grid gap-4 lg:grid-cols-3">
             {/* Overall score */}
-            <section className="ds-card flex flex-col justify-center p-6 lg:col-span-2">
+            <section className="ds-card flex flex-col justify-center p-6 lg:col-span-1">
               <p className="ds-eyebrow text-center">Puntaje general</p>
               <div className="mt-5">
                 <ScoreGauge score={overallScore} />
@@ -138,7 +136,7 @@ function ResultadoContent() {
             </section>
 
             {/* Bottleneck — the headline of the whole page */}
-            <section className="ds-card p-6 sm:p-8 lg:col-span-3">
+            <section className="ds-card p-6 sm:p-8 lg:col-span-2">
               <BottleneckCard
                 cuelloBotella={resultado.cuello_botella}
                 proximoPaso={resultado.proximo_paso}
