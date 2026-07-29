@@ -79,8 +79,8 @@ export default function GatekeepingPage() {
 
   return (
     <div className="relative flex flex-1">
-      <div className="ds-container relative flex h-full">
-        {/* Grid: left dark panel (1/3), right white panel (2/3) */}
+      {/* Grid: left dark panel (1/3), right white panel (2/3) - full width */}
+      <div className="relative flex h-full w-full">
         <div className="grid w-full h-full lg:grid-cols-[1fr_2fr]">
           {/* Left: Dark panel with copy - 1/3 width */}
           <div
@@ -292,7 +292,7 @@ export default function GatekeepingPage() {
                   </p>
                 </div>
               </form>
-            </div>
+</div>
           </div>
         </div>
       </div>
