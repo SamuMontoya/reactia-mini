@@ -140,13 +140,13 @@ export default function ReactiaMiniLandingPage() {
         />
       </section>
 
-      {/* ══ Cómo funciona — centered, modern cards ══ */}
+      {/* ══ Cómo funciona — centered in remaining viewport ══ */}
       <section
-        className="ds-container ds-animate-up py-6 lg:py-10"
+        className="ds-container ds-animate-up flex-1 flex items-center justify-center px-5"
         style={{ animationDelay: '0.4s' }}
         aria-label="Cómo funciona"
       >
-        <div className="mx-auto max-w-[72rem]">
+        <div className="w-full max-w-[72rem]">
           <div
             className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
             role="list"
