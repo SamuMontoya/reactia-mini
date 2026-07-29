@@ -81,7 +81,7 @@ export default function GatekeepingPage() {
   const amberHalo = `radial-gradient(circle, rgba(200,134,10,.18) 0%, rgba(200,134,10,.04) 45%, transparent 72%)`;
 
   return (
-    <div className="relative flex h-full w-full">
+    <div className="relative flex h-full flex-1 w-full">
       {/* Grid: left dark panel (1/3), right white panel (2/3) - full width */}
       <div className="grid h-full w-full lg:grid-cols-[1fr_2fr]">
         {/* Left: Dark panel with copy - 1/3 width */}
