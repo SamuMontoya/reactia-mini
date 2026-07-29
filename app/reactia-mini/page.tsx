@@ -142,7 +142,7 @@ export default function ReactiaMiniLandingPage() {
 
       {/* ══ Cómo funciona — centered in remaining viewport ══ */}
       <section
-        className="ds-container ds-animate-up flex-1 flex items-center justify-center px-5"
+        className="ds-container ds-animate-up flex-1 flex items-center justify-center px-5 py-6"
         style={{ animationDelay: '0.4s' }}
         aria-label="Cómo funciona"
       >
