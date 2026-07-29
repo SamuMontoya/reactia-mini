@@ -79,11 +79,20 @@ export default function GatekeepingPage() {
 
   return (
     <div className="relative flex flex-1">
-      {/* Left dark panel - no grid, just solid ink with subtle halo */}
+      {/* Left dark panel - 1/3 width with subtle diagonal line pattern */}
       <div
         aria-hidden
-        className="pointer-events-none absolute inset-0 bg-ink lg:absolute lg:inset-y-0 lg:left-0 lg:w-1/2"
+        className="pointer-events-none absolute inset-0 bg-ink lg:absolute lg:inset-y-0 lg:left-0 lg:w-1/3"
       >
+        {/* Diagonal line pattern - subtle diagnostic/scan aesthetic */}
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.06]"
+          style={{
+            backgroundImage:
+              'repeating-linear-gradient(45deg, var(--color-dust) 0, var(--color-dust) 1px, transparent 1px, transparent 40px)',
+            backgroundSize: '56px 56px',
+          }}
+        />
         <div
           className="ds-halo left-1/2 top-[-18rem] h-[32rem] w-[32rem] -translate-x-1/2"
           style={{
@@ -94,7 +103,7 @@ export default function GatekeepingPage() {
       </div>
 
       <div className="ds-container relative flex h-full items-center">
-        <div className="grid w-full gap-8 lg:grid-cols-[1fr_1fr] lg:gap-0">
+        <div className="grid w-full gap-8 lg:grid-cols-[1fr_2fr] lg:gap-0">
           {/* Left: Copy on dark background */}
           <div className="relative z-10 flex flex-col justify-center p-6 lg:p-12 text-center lg:text-left">
             <p className="ds-wash ds-animate-up inline-block py-1.5 pl-3 pr-3.5">
