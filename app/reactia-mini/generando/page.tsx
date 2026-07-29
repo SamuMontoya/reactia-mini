@@ -148,7 +148,7 @@ function GenerandoContent() {
     // light result page feel like a payoff. Ink is the brand's own treatment for
     // its "voice" moments, so it reads as intentional rather than as a loader
     // someone dropped in.
-    <div className="relative flex flex-1 items-center justify-center overflow-hidden bg-ink py-16">
+    <div className="relative flex flex-1 flex-col items-center justify-center overflow-hidden bg-ink">
       <div
         aria-hidden
         className="ds-float pointer-events-none absolute left-1/2 top-1/2 h-[34rem] w-[34rem] rounded-full"
