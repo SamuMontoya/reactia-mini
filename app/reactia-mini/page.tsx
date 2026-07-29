@@ -11,7 +11,7 @@ export default function ReactiaMiniLandingPage() {
   }, []);
 
   return (
-    <div className="flex flex-1 flex-col">
+    <div className="flex h-full flex-1 flex-col">
       {/* ══ HERO — full-bleed ink ══
           Dark here doesn't clash because it isn't a one-off: generando, the
           result page's closing CTA and the footer are all ink already, so the
