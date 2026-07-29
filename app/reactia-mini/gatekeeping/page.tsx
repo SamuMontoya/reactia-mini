@@ -105,7 +105,7 @@ export default function GatekeepingPage() {
       <div className="ds-container relative flex h-full items-center">
         <div className="grid w-full h-full gap-8 lg:grid-cols-[1fr_2fr] lg:gap-0">
           {/* Left: Copy on dark background - centered in panel */}
-          <div className="relative z-10 flex h-full flex-col justify-center p-6 lg:p-12 text-center lg:text-left">
+          <div className="relative z-10 flex h-full flex-col justify-center p-6 lg:p-12 text-center">
             <p className="ds-wash ds-animate-up inline-block py-1.5 pl-3 pr-3.5">
               <span className="ds-eyebrow">Paso 1 de 3</span>
             </p>
