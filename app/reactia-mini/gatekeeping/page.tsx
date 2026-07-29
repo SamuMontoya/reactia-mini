@@ -128,7 +128,7 @@ export default function GatekeepingPage() {
 
           {/* Right: White panel with form - 2/3 width */}
           <div className="relative z-10 flex h-full items-center justify-center p-6 lg:p-12 bg-white">
-            <div className="ds-animate-up w-full max-w-md" style={{ animationDelay: '240ms' }}>
+            <div className="ds-animate-up w-full" style={{ animationDelay: '240ms' }}>
               <form
                 onSubmit={handleSubmit(onSubmit)}
                 noValidate
