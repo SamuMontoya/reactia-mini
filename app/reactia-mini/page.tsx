@@ -155,7 +155,7 @@ export default function ReactiaMiniLandingPage() {
             {landingCopy.howItWorks.map((step, index) => (
               <article
                 key={step.titulo}
-                className="group relative overflow-hidden rounded-[var(--radius-card)] bg-white p-5 shadow-[var(--shadow-sm)] transition-all duration-500 ease-[var(--ease-brand)] hover:-translate-y-1 hover:shadow-[var(--shadow-lg)] min-h-[280px] flex flex-col"
+                className="group relative overflow-hidden rounded-[var(--radius-card)] bg-white p-5 shadow-[var(--shadow-sm)] transition-all duration-500 ease-[var(--ease-brand)] hover:-translate-y-1 hover:shadow-[var(--shadow-lg)] flex flex-col"
                 style={{ transitionDelay: `${0.24 + index * 0.08}s` }}
               >
                 {/* Amber top accent line — brand's signature */}
@@ -164,10 +164,10 @@ export default function ReactiaMiniLandingPage() {
                   className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
                 />
 
-                {/* Ghost number — brand's "ghost number" motif, now with amber tint on hover */}
+                {/* Ghost number — decorative background element, bottom right */}
                 <span
                   aria-hidden
-                  className="pointer-events-none absolute right-4 bottom-4 select-none font-display text-7xl font-extrabold leading-none text-dust/20 group-hover:text-amber/30 transition-colors duration-500"
+                  className="pointer-events-none absolute right-4 bottom-2 select-none font-display text-8xl font-extrabold leading-none text-dust/15 group-hover:text-amber/25 transition-colors duration-500 -z-10"
                 >
                   {index + 1}
                 </span>
