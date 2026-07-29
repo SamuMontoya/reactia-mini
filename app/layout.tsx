@@ -49,7 +49,7 @@ export default function RootLayout({
       lang="es"
       className={`${bricolage.variable} ${dmSans.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">
+      <body className="min-h-screen flex flex-col">
         {children}
         <Script
           src="https://cloud.umami.is/script.js"
