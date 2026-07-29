@@ -79,34 +79,34 @@ export default function GatekeepingPage() {
 
   return (
     <div className="relative flex flex-1">
-      {/* Left dark panel - 1/3 width with subtle diagonal line pattern */}
-      <div
-        aria-hidden
-        className="pointer-events-none absolute inset-0 bg-ink lg:absolute lg:inset-y-0 lg:left-0 lg:w-1/3"
-      >
-        {/* Diagonal line pattern - subtle diagnostic/scan aesthetic */}
-        <div
-          className="pointer-events-none absolute inset-0 opacity-[0.06]"
-          style={{
-            backgroundImage:
-              'repeating-linear-gradient(45deg, var(--color-dust) 0, var(--color-dust) 1px, transparent 1px, transparent 40px)',
-            backgroundSize: '56px 56px',
-          }}
-        />
-        <div
-          className="ds-halo left-1/2 top-[-18rem] h-[32rem] w-[32rem] -translate-x-1/2"
-          style={{
-            background:
-              'radial-gradient(circle, rgba(200,134,10,.18) 0%, rgba(200,134,10,.04) 45%, transparent 72%)',
-          }}
-        />
-      </div>
+      <div className="ds-container relative flex h-full">
+        {/* Grid: left dark panel (1/3), right white panel (2/3) */}
+        <div className="grid w-full h-full lg:grid-cols-[1fr_2fr]">
+          {/* Left: Dark panel with copy - 1/3 width */}
+          <div
+            className="relative z-10 flex h-full flex-col justify-center p-6 lg:p-12 bg-ink overflow-hidden"
+            aria-hidden="true"
+          >
+            {/* Diagonal line pattern - subtle diagnostic/scan aesthetic */}
+            <div
+              className="pointer-events-none absolute inset-0 opacity-[0.06]"
+              style={{
+                backgroundImage:
+                  'repeating-linear-gradient(45deg, var(--color-dust) 0, var(--color-dust) 1px, transparent 1px, transparent 40px)',
+                backgroundSize: '56px 56px',
+              }}
+            />
+            {/* Amber halo */}
+            <div
+              className="ds-halo left-1/2 top-[-18rem] h-[32rem] w-[32rem] -translate-x-1/2"
+              style={{
+                background:
+                  'radial-gradient(circle, rgba(200,134,10,.18) 0%, rgba(200,134,10,.04) 45%, transparent 72%)',
+              }}
+            />
 
-      <div className="ds-container relative flex h-full items-center">
-        <div className="grid w-full h-full gap-8 lg:grid-cols-[1fr_2fr] lg:gap-0">
-          {/* Left: Copy on dark background - block centered horizontally, text left-aligned */}
-          <div className="relative z-10 flex h-full flex-col justify-center p-6 lg:p-12">
-            <div className="mx-auto max-w-md text-left">
+            {/* Copy block - centered horizontally, text left-aligned */}
+            <div className="relative z-10 mx-auto max-w-md text-left">
               <p className="ds-wash ds-animate-up inline-block py-1.5 pl-3 pr-3.5">
                 <span className="ds-eyebrow">Paso 1 de 3</span>
               </p>
@@ -126,7 +126,7 @@ export default function GatekeepingPage() {
             </div>
           </div>
 
-          {/* Right: Form on white background, centered */}
+          {/* Right: White panel with form - 2/3 width */}
           <div className="relative z-10 flex h-full items-center justify-center p-6 lg:p-12 bg-white">
             <div className="ds-animate-up w-full max-w-md" style={{ animationDelay: '240ms' }}>
               <form
