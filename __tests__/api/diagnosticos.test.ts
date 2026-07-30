@@ -19,8 +19,15 @@ const mockDeviceDiagInsert = jest.fn<
   (payload: { device_id: string; lead_id: string; diagnostico_id: string }) => Promise<DeviceDiagResult>
 >();
 
-jest.mock('@/lib/supabase', () => ({
-  supabase: {
+// The device-limit check runs its own separate query — mocked to
+// "under the limit" here since these tests are about saveDiagnostico's own
+// logic, not the limit gate (covered in its own test file).
+jest.mock('@/lib/api/device', () => ({
+  asegurarLimiteDiagnosticosNoAlcanzado: jest.fn(() => Promise.resolve()),
+}));
+
+jest.mock('@/lib/supabaseAdmin', () => ({
+  supabaseAdmin: {
     from: jest.fn((table: string) => {
       if (table === 'leads') {
         return {

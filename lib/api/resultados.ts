@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import type { ScoringResult } from '@/lib/schemas';
 
 type ScoringResultWithModel = ScoringResult & { modelo_usado: string };
@@ -7,7 +7,7 @@ export const saveResultado = async (
   diagnosticoId: string,
   scoringResult: ScoringResultWithModel
 ) => {
-  const { data: diagnostico, error: diagnosticoError } = await supabase
+  const { data: diagnostico, error: diagnosticoError } = await supabaseAdmin
     .from('diagnosticos')
     .select('id')
     .eq('id', diagnosticoId)
@@ -17,7 +17,7 @@ export const saveResultado = async (
     throw new Error('Diagnóstico no encontrado');
   }
 
-  const { data: resultado, error } = await supabase
+  const { data: resultado, error } = await supabaseAdmin
     .from('resultados')
     .insert({
       diagnostico_id: diagnosticoId,
@@ -33,7 +33,7 @@ export const saveResultado = async (
 
   if (error) throw new Error(error.message);
 
-  const { error: deviceDiagError } = await supabase
+  const { error: deviceDiagError } = await supabaseAdmin
     .from('device_diagnostics')
     .update({ resultado_id: resultado.id })
     .eq('diagnostico_id', diagnosticoId);

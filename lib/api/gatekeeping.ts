@@ -1,6 +1,7 @@
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import { gatekeepingSchema, type Gatekeeping } from '@/lib/schemas';
 import { rangoACop } from '@/content/facturacion-rangos';
+import { asegurarLimiteDiagnosticosNoAlcanzado } from '@/lib/api/device';
 
 /** Monthly revenue at or above this qualifies for the paid program. */
 export const UMBRAL_FACTURACION_COP = 5_000_000;
@@ -9,6 +10,12 @@ export const MINIMO_ANIOS_OPERACION = 1;
 
 export const submitGatekeeping = async (data: Gatekeeping, deviceId?: string) => {
   const validData = gatekeepingSchema.parse(data);
+
+  // The real gate: the landing page's popup only stops the button click —
+  // nothing prevented a bookmark, a typed URL, or the history grid's
+  // desktop placeholder card from reaching this route directly and
+  // creating another lead anyway. This is what actually enforces the limit.
+  await asegurarLimiteDiagnosticosNoAlcanzado(deviceId);
 
   // Derived here, not sent by the client: the form only offers bands, so the
   // stored figure is always the band's floor (see content/facturacion-rangos.ts).
@@ -22,7 +29,7 @@ export const submitGatekeeping = async (data: Gatekeeping, deviceId?: string) =>
     validData.anios_operacion >= MINIMO_ANIOS_OPERACION &&
     validData.rol === 'dueño_ceo';
 
-  const { data: lead, error } = await supabase
+  const { data: lead, error } = await supabaseAdmin
     .from('leads')
     .insert({
       facturacion_mensual_cop: facturacionCop,

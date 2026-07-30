@@ -10,8 +10,8 @@ type UpdateResult = { error: { message: string } | null };
 const mockSingle = jest.fn<() => Promise<SingleResult>>();
 const mockUpdateEq = jest.fn<() => Promise<UpdateResult>>();
 
-jest.mock('@/lib/supabase', () => ({
-  supabase: {
+jest.mock('@/lib/supabaseAdmin', () => ({
+  supabaseAdmin: {
     from: jest.fn(() => ({
       select: jest.fn(() => ({
         eq: jest.fn(() => ({

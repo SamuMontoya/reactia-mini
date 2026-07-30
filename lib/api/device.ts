@@ -1,5 +1,6 @@
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 import type { ScoringResult } from '@/lib/schemas';
+import { MAX_DIAGNOSTICOS_GRATIS } from '@/lib/constants/limits';
 
 export type ResultadoResumen = Pick<
   ScoringResult,
@@ -17,10 +18,45 @@ export type DiagnosticoPorDispositivo = {
   resultado: ResultadoResumen | null;
 };
 
+/** How many diagnósticos this device already has, straight from the count
+ *  (`head: true` — no rows fetched), rather than reusing
+ *  `getDiagnosticosByDeviceId` and taking `.length`, which would pull every
+ *  joined column for rows the caller never looks at. */
+export const countDiagnosticosByDeviceId = async (deviceId: string): Promise<number> => {
+  const { count, error } = await supabaseAdmin
+    .from('device_diagnostics')
+    .select('*', { count: 'exact', head: true })
+    .eq('device_id', deviceId);
+
+  if (error) throw new Error(error.message);
+
+  return count ?? 0;
+};
+
+/** Throws when a device has already used up its free diagnósticos — the
+ *  server-side counterpart to the landing page's popup, called from both
+ *  submitGatekeeping (blocks a new lead as early as possible) and
+ *  saveDiagnostico (defense in depth against races, e.g. two tabs open at
+ *  once, that a client-side check can't catch). A missing `deviceId` isn't
+ *  blocked here — that's an existing, separate gap (no deviceId validation
+ *  upstream), not something this check should paper over. */
+export const asegurarLimiteDiagnosticosNoAlcanzado = async (
+  deviceId: string | null | undefined
+): Promise<void> => {
+  if (!deviceId) return;
+
+  const total = await countDiagnosticosByDeviceId(deviceId);
+  if (total >= MAX_DIAGNOSTICOS_GRATIS) {
+    throw new Error(
+      'Ya usaste tus diagnósticos gratuitos en este dispositivo. Escríbenos por WhatsApp.'
+    );
+  }
+};
+
 export const getDiagnosticosByDeviceId = async (
   deviceId: string
 ): Promise<DiagnosticoPorDispositivo[]> => {
-  const { data, error } = await supabase
+  const { data, error } = await supabaseAdmin
     .from('device_diagnostics')
     .select(
       `

@@ -11,10 +11,7 @@ import { DiagnosticHistory, type DraftPendienteInfo } from '@/components/Diagnos
 import LimiteDiagnosticosModal from '@/app/reactia-mini/LimiteDiagnosticosModal';
 import Reveal from '@/components/ui/Reveal';
 import { ArrowRight, Check, Clock } from '@/components/icons';
-
-/** Free diagnósticos allowed per device. Past this, the main CTA stops the
- *  flow with a "talk to us" popup instead of starting another one. */
-const MAX_DIAGNOSTICOS_GRATIS = 3;
+import { MAX_DIAGNOSTICOS_GRATIS } from '@/lib/constants/limits';
 
 export default function ReactiaMiniLandingPage() {
   const deviceId = useDeviceId();

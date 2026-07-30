@@ -1,21 +1,39 @@
 import { describe, it, expect, jest, beforeEach } from '@jest/globals';
-import { getDiagnosticosByDeviceId } from '@/lib/api/device';
+import {
+  asegurarLimiteDiagnosticosNoAlcanzado,
+  countDiagnosticosByDeviceId,
+  getDiagnosticosByDeviceId,
+} from '@/lib/api/device';
+import { MAX_DIAGNOSTICOS_GRATIS } from '@/lib/constants/limits';
 
 type SelectResult = {
   data: unknown[] | null;
   error: { message: string } | null;
 };
+type CountResult = {
+  count: number | null;
+  error: { message: string } | null;
+};
 
 const mockOrder = jest.fn<() => Promise<SelectResult>>();
+// Separate from mockOrder: countDiagnosticosByDeviceId's query
+// (`.select('*', { count, head }).eq(...)`) resolves straight off `.eq()`,
+// it never calls `.order()` — a different chain shape than
+// getDiagnosticosByDeviceId's, distinguished below by whether `select` was
+// called with a `count` option.
+const mockCountEq = jest.fn<() => Promise<CountResult>>();
 
-jest.mock('@/lib/supabase', () => ({
-  supabase: {
+jest.mock('@/lib/supabaseAdmin', () => ({
+  supabaseAdmin: {
     from: jest.fn(() => ({
-      select: jest.fn(() => ({
-        eq: jest.fn(() => ({
-          order: mockOrder,
-        })),
-      })),
+      select: jest.fn((_columns: string, opts?: { count?: string }) => {
+        if (opts?.count) {
+          return { eq: mockCountEq };
+        }
+        return {
+          eq: jest.fn(() => ({ order: mockOrder })),
+        };
+      }),
     })),
   },
 }));
@@ -37,6 +55,7 @@ const resultadoResumen = {
 
 beforeEach(() => {
   mockOrder.mockReset();
+  mockCountEq.mockReset();
 });
 
 describe('getDiagnosticosByDeviceId', () => {
@@ -109,5 +128,48 @@ describe('getDiagnosticosByDeviceId', () => {
     await expect(getDiagnosticosByDeviceId('device-1')).rejects.toThrow(
       'Error de conexión'
     );
+  });
+});
+
+describe('countDiagnosticosByDeviceId', () => {
+  it('devuelve el conteo exacto de la consulta', async () => {
+    mockCountEq.mockResolvedValue({ count: 2, error: null });
+    await expect(countDiagnosticosByDeviceId('device-1')).resolves.toBe(2);
+  });
+
+  it('devuelve 0 cuando count viene null', async () => {
+    mockCountEq.mockResolvedValue({ count: null, error: null });
+    await expect(countDiagnosticosByDeviceId('device-1')).resolves.toBe(0);
+  });
+
+  it('lanza error si falla la consulta', async () => {
+    mockCountEq.mockResolvedValue({ count: null, error: { message: 'Error de conexión' } });
+    await expect(countDiagnosticosByDeviceId('device-1')).rejects.toThrow('Error de conexión');
+  });
+});
+
+describe('asegurarLimiteDiagnosticosNoAlcanzado', () => {
+  it('no lanza si el dispositivo está por debajo del límite', async () => {
+    mockCountEq.mockResolvedValue({ count: MAX_DIAGNOSTICOS_GRATIS - 1, error: null });
+    await expect(
+      asegurarLimiteDiagnosticosNoAlcanzado('device-1')
+    ).resolves.toBeUndefined();
+  });
+
+  it('lanza cuando el dispositivo ya alcanzó el límite', async () => {
+    mockCountEq.mockResolvedValue({ count: MAX_DIAGNOSTICOS_GRATIS, error: null });
+    await expect(asegurarLimiteDiagnosticosNoAlcanzado('device-1')).rejects.toThrow();
+  });
+
+  it('lanza cuando el dispositivo ya está por encima del límite', async () => {
+    mockCountEq.mockResolvedValue({ count: MAX_DIAGNOSTICOS_GRATIS + 5, error: null });
+    await expect(asegurarLimiteDiagnosticosNoAlcanzado('device-1')).rejects.toThrow();
+  });
+
+  it('no lanza ni consulta cuando no hay deviceId', async () => {
+    await expect(
+      asegurarLimiteDiagnosticosNoAlcanzado(undefined)
+    ).resolves.toBeUndefined();
+    expect(mockCountEq).not.toHaveBeenCalled();
   });
 });

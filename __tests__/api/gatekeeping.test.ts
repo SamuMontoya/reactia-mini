@@ -1,8 +1,8 @@
 import { describe, it, expect, jest } from '@jest/globals';
 import { submitGatekeeping } from '@/lib/api/gatekeeping';
 
-jest.mock('@/lib/supabase', () => ({
-  supabase: {
+jest.mock('@/lib/supabaseAdmin', () => ({
+  supabaseAdmin: {
     from: jest.fn(() => ({
       insert: jest.fn(() => ({
         select: jest.fn(() => ({
@@ -16,6 +16,13 @@ jest.mock('@/lib/supabase', () => ({
       })),
     })),
   },
+}));
+
+// The device-limit check runs a separate query (device_diagnostics count) —
+// mocked to "under the limit" here since these tests are about the
+// qualification logic, not the limit gate (covered in its own test file).
+jest.mock('@/lib/api/device', () => ({
+  asegurarLimiteDiagnosticosNoAlcanzado: jest.fn(() => Promise.resolve()),
 }));
 
 describe('submitGatekeeping', () => {

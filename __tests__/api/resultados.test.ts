@@ -22,8 +22,8 @@ const mockDeviceDiagUpdate = jest.fn<(payload: { resultado_id: string }) => { eq
   () => ({ eq: mockDeviceDiagEq })
 );
 
-jest.mock('@/lib/supabase', () => ({
-  supabase: {
+jest.mock('@/lib/supabaseAdmin', () => ({
+  supabaseAdmin: {
     from: jest.fn((table: string) => {
       if (table === 'diagnosticos') {
         return {

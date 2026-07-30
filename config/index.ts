@@ -1,6 +1,11 @@
 export const config = {
   SUPABASE_URL: process.env.NEXT_PUBLIC_SUPABASE_URL || '',
   SUPABASE_PUBLISHABLE_KEY: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY || '',
+  // Server-only (no NEXT_PUBLIC_ prefix, never bundled to the browser). Used
+  // exclusively by lib/supabaseAdmin.ts for writes from API routes — RLS is
+  // enabled on every table, so the publishable key above can no longer
+  // insert/update/delete anything, only read what its policies allow.
+  SUPABASE_SECRET_KEY: process.env.NEXT_SUPABASE_SECRET_KEY || '',
   GROQ_API_KEY: process.env.GROQ_API_KEY || '',
   UMAMI_ID: process.env.NEXT_PUBLIC_UMAMI_WEBSITE_ID || '',
   // Destination of every "hablar con un experto" link. The fallback is the

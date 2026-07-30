@@ -1,7 +1,7 @@
-import { supabase } from '@/lib/supabase';
+import { supabaseAdmin } from '@/lib/supabaseAdmin';
 
 export const updateLeadEmail = async (leadId: string, email: string) => {
-  const { data: lead, error: fetchError } = await supabase
+  const { data: lead, error: fetchError } = await supabaseAdmin
     .from('leads')
     .select('id, estado')
     .eq('id', leadId)
@@ -15,7 +15,7 @@ export const updateLeadEmail = async (leadId: string, email: string) => {
     throw new Error('El lead no está en estado no_calificado');
   }
 
-  const { error: updateError } = await supabase
+  const { error: updateError } = await supabaseAdmin
     .from('leads')
     .update({ email })
     .eq('id', leadId);
