@@ -29,24 +29,40 @@ export function getDeviceId(): string {
   if (typeof window === 'undefined') {
     return '';
   }
-  let deviceId = localStorage.getItem(STORAGE_KEY);
-  // Also regenerates anything saved by the pre-fix fallback, which wasn't a
-  // valid uuid and would otherwise keep failing every insert forever.
-  if (!deviceId || !UUID_RE.test(deviceId)) {
-    deviceId = generateId();
-    localStorage.setItem(STORAGE_KEY, deviceId);
+  // Wrapped like every other localStorage access in this codebase
+  // (leadStorage.ts, diagnosticoDraft.ts): private-browsing storage
+  // restrictions or a full quota throw on both getItem and setItem, and an
+  // uncaught throw here happens during render, crashing hydration for the
+  // whole page — the exact failure mode this file already guards against
+  // for `crypto.randomUUID()`, just one line up.
+  try {
+    let deviceId = localStorage.getItem(STORAGE_KEY);
+    // Also regenerates anything saved by the pre-fix fallback, which wasn't a
+    // valid uuid and would otherwise keep failing every insert forever.
+    if (!deviceId || !UUID_RE.test(deviceId)) {
+      deviceId = generateId();
+      localStorage.setItem(STORAGE_KEY, deviceId);
+    }
+    return deviceId;
+  } catch {
+    return generateId();
   }
-  return deviceId;
 }
 
 export function setDeviceId(deviceId: string): void {
-  if (typeof window !== 'undefined') {
+  if (typeof window === 'undefined') return;
+  try {
     localStorage.setItem(STORAGE_KEY, deviceId);
+  } catch {
+    // localStorage no disponible (SSR u otro contexto)
   }
 }
 
 export function clearDeviceId(): void {
-  if (typeof window !== 'undefined') {
+  if (typeof window === 'undefined') return;
+  try {
     localStorage.removeItem(STORAGE_KEY);
+  } catch {
+    // localStorage no disponible (SSR u otro contexto)
   }
 }

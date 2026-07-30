@@ -71,11 +71,23 @@ export const draftTieneRespuestas = (draft: DiagnosticoDraft): boolean =>
   Object.keys(draft.respuestas).length > 0;
 
 /** Whether every question has an answer, i.e. the draft belongs on the
- *  review screen rather than back on a specific question. */
+ *  review screen rather than back on a specific question.
+ *
+ *  Checked against the actual main-question ids, not a raw key count: the
+ *  form also stores each "otro" free-text companion field under its own key
+ *  (e.g. `origen_clientes_otro`) once a question's "otro" option is picked,
+ *  so a draft answering 10 of 12 main questions but choosing "otro" on 2 of
+ *  them has 12 keys — a count against `totalPreguntas` would call that
+ *  complete and route straight to the review screen with 2 required
+ *  questions still blank. */
 export const draftEstaCompleto = (
   draft: DiagnosticoDraft,
-  totalPreguntas: number
-): boolean => Object.keys(draft.respuestas).length >= totalPreguntas;
+  preguntaIds: readonly (keyof Diagnostico)[]
+): boolean =>
+  preguntaIds.every((id) => {
+    const value = draft.respuestas[id];
+    return value !== undefined && value !== null && value !== '';
+  });
 
 /** Which question index to reopen on — the saved step, clamped so a draft
  *  saved against a longer version of the wizard can't point past the end

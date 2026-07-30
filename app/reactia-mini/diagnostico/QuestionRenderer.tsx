@@ -41,11 +41,16 @@ export default function QuestionRenderer({
   // say so — the interim preview under DictateButton is easy to miss on a
   // phone, but text where the reader is already looking isn't.
   const [dictando, setDictando] = useState(false);
+  // Live, not-yet-final guess from DictateButton, merged straight into the
+  // textarea's own displayed value below rather than shown in a floating
+  // preview — see DictateButton's doc comment for why.
+  const [interim, setInterim] = useState('');
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setPegadoBloqueado(false);
     setDictando(false);
+    setInterim('');
   }, [question.id]);
 
   const labelId = `pregunta-${question.id}`;
@@ -151,6 +156,13 @@ export default function QuestionRenderer({
               render={({ field }) => {
                 const texto = (field.value as string | undefined) ?? '';
                 const max = question.maxLength;
+                // Merged live, right inside the field: while dictating, the
+                // growing interim guess is appended after whatever is
+                // already committed, so there is nothing to swap out once
+                // it goes final — the committed text lands in the exact
+                // spot the preview was already showing.
+                const valorMostrado =
+                  dictando && interim ? `${texto}${texto ? ' ' : ''}${interim}` : texto;
 
                 return (
                   <div>
@@ -166,7 +178,8 @@ export default function QuestionRenderer({
                       maxLength={max}
                       aria-invalid={error ? true : undefined}
                       aria-describedby={max ? `${question.id}-contador` : undefined}
-                      value={texto}
+                      readOnly={dictando}
+                      value={valorMostrado}
                       onChange={field.onChange}
                       onBlur={field.onBlur}
                       onPaste={
@@ -194,6 +207,7 @@ export default function QuestionRenderer({
                         }}
                         onFocusFallback={() => textareaRef.current?.focus()}
                         onListeningChange={setDictando}
+                        onInterimChange={setInterim}
                       />
 
                       {max && (

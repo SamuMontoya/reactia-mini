@@ -57,12 +57,18 @@ type DictateButtonProps = {
    *  (old Firefox, some in-app browsers). Puts the keyboard up so the user
    *  can at least type, or use whatever dictation the keyboard itself offers. */
   onFocusFallback: () => void;
-  /** Fires on every listening/not-listening change. The interim preview
-   *  under this button is easy to miss on a phone screen — the parent uses
-   *  this to swap the (otherwise still-empty) textarea's own placeholder to
+  /** Fires on every listening/not-listening change. The parent uses this to
+   *  swap the (otherwise still-empty) textarea's own placeholder to
    *  something that says recording is happening, right where the reader is
    *  actually looking. */
   onListeningChange?: (listening: boolean) => void;
+  /** Fires with the live, not-yet-final guess as it grows, and with '' once
+   *  it clears. The parent renders this merged into the textarea's own
+   *  value — inside the field the reader is looking at, not in a floating
+   *  preview under this button — so there is nothing to swap out once the
+   *  chunk goes final; the committed text lands in the exact same spot the
+   *  preview was already showing. */
+  onInterimChange?: (interim: string) => void;
 };
 
 /**
@@ -79,21 +85,21 @@ type DictateButtonProps = {
  *
  * `interimResults: true` is what makes this feel live instead of silent
  * until the whole utterance finishes: WebKit fires `onresult` repeatedly
- * with a growing, not-yet-final guess, which renders here as dimmed preview
- * text under the level bars. Once a chunk comes back `isFinal`, it's handed
- * to `onTranscript` (committed into the real field, full colour) and the
- * preview clears — the "starts grey, turns solid" effect the field itself
- * can't do on its own, since a plain textarea can't colour part of its text
- * differently.
+ * with a growing, not-yet-final guess, reported via `onInterimChange` so the
+ * parent can merge it straight into the textarea's own value — inside the
+ * field itself, not a floating preview under this button. Once a chunk
+ * comes back `isFinal`, it's handed to `onTranscript` and the interim is
+ * cleared in the same tick, so the committed text lands in the exact spot
+ * the preview was already showing — nothing to swap out afterwards.
  */
 export default function DictateButton({
   onTranscript,
   onFocusFallback,
   onListeningChange,
+  onInterimChange,
 }: DictateButtonProps) {
   const [supported, setSupported] = useState(false);
   const [listening, setListening] = useState(false);
-  const [interim, setInterim] = useState('');
   const [hint, setHint] = useState<string | null>(null);
 
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
@@ -122,7 +128,7 @@ export default function DictateButton({
     clearNoResultTimer();
     recognitionRef.current?.stop();
     setListening(false);
-    setInterim('');
+    onInterimChange?.('');
   };
 
   useEffect(() => stop, []);
@@ -163,7 +169,7 @@ export default function DictateButton({
 
       if (finalText.trim()) {
         onTranscript(finalText.trim());
-        setInterim('');
+        onInterimChange?.('');
         // Explicit, rather than waiting on the browser's own `onend` timing:
         // `continuous: false` means one final result is the whole session,
         // and asking it to stop the instant that arrives — instead of
@@ -172,7 +178,7 @@ export default function DictateButton({
         // (and drops the OS mic indicator) right away instead of lingering.
         recognitionRef.current?.stop();
       } else {
-        setInterim(interimText);
+        onInterimChange?.(interimText);
       }
     };
 
@@ -180,7 +186,7 @@ export default function DictateButton({
       if (event.error === 'no-speech') return; // onend right after covers this
       clearNoResultTimer();
       setListening(false);
-      setInterim('');
+      onInterimChange?.('');
 
       if (event.error === 'not-allowed' || event.error === 'service-not-allowed') {
         showHint('Dale permiso de micrófono a esta página para poder dictar.');
@@ -193,7 +199,7 @@ export default function DictateButton({
     recognition.onend = () => {
       clearNoResultTimer();
       setListening(false);
-      setInterim('');
+      onInterimChange?.('');
       if (!gotResultRef.current) {
         showHint(
           'No captamos nada. Revisa que el Dictado esté activado (Ajustes → General → Teclado → Dictado) y que le dieras permiso de micrófono a esta página, y vuelve a tocar Dictar.'
@@ -245,15 +251,6 @@ export default function DictateButton({
         )}
         {listening ? 'Escuchando…' : 'Dictar'}
       </button>
-
-      {listening && interim && (
-        <span
-          aria-live="polite"
-          className="absolute left-0 top-full mt-1.5 max-w-[16rem] truncate text-sm italic text-stone/60"
-        >
-          {interim}
-        </span>
-      )}
 
       {hint && (
         <span

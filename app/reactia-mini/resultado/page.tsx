@@ -341,12 +341,19 @@ function ResultadoContent() {
         resultadoId={resultado.id}
       />
 
-      {/* Fires 30s after the result page opens, once per session — see ContactoPopup. */}
-      <ContactoPopup
-        cuelloBotella={resultado.cuello_botella}
-        score={overallScore}
-        resultadoId={resultado.id}
-      />
+      {/* Fires 30s after the result page opens, once per session — see
+          ContactoPopup. Suppressed once expired: ExpiradoModal is already
+          the one thing on screen at that point (no close button, "it *is*
+          the content now" per its own doc comment), and letting this timer
+          keep running underneath it meant it could still pop up on top of
+          — or behind — that non-dismissible modal after 30s. */}
+      {!isBlocked && (
+        <ContactoPopup
+          cuelloBotella={resultado.cuello_botella}
+          score={overallScore}
+          resultadoId={resultado.id}
+        />
+      )}
     </div>
   );
 }

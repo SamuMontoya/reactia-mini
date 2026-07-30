@@ -8,8 +8,13 @@ import { useDiagnosticHistory } from '@/lib/hooks/useDiagnosticHistory';
 import { useLead } from '@/lib/hooks/useLead';
 import { draftTieneRespuestas, getDraft } from '@/lib/storage/diagnosticoDraft';
 import { DiagnosticHistory, type DraftPendienteInfo } from '@/components/DiagnosticHistory';
+import LimiteDiagnosticosModal from '@/app/reactia-mini/LimiteDiagnosticosModal';
 import Reveal from '@/components/ui/Reveal';
 import { ArrowRight, Check, Clock } from '@/components/icons';
+
+/** Free diagnósticos allowed per device. Past this, the main CTA stops the
+ *  flow with a "talk to us" popup instead of starting another one. */
+const MAX_DIAGNOSTICOS_GRATIS = 3;
 
 export default function ReactiaMiniLandingPage() {
   const deviceId = useDeviceId();
@@ -48,6 +53,8 @@ export default function ReactiaMiniLandingPage() {
   }, [lead]);
 
   const hasHistory = diagnosticos.length > 0 || !!draftInfo;
+  const limiteAlcanzado = diagnosticos.length >= MAX_DIAGNOSTICOS_GRATIS;
+  const [showLimiteModal, setShowLimiteModal] = useState(false);
 
   useEffect(() => {
     if (deviceId) {
@@ -165,11 +172,17 @@ export default function ReactiaMiniLandingPage() {
                   place — so that button is gone and this label carries it. */}
               <Link
                 href="/reactia-mini/gatekeeping"
-                onClick={() =>
+                onClick={(event) => {
+                  if (limiteAlcanzado) {
+                    event.preventDefault();
+                    trackEvent('cta_limite_alcanzado_click');
+                    setShowLimiteModal(true);
+                    return;
+                  }
                   trackEvent(
                     hasHistory ? 'cta_nuevo_diagnostico_click' : 'cta_iniciar_click'
-                  )
-                }
+                  );
+                }}
                 // Same treatment as the closing CTA on the result page: pulse
                 // ring plus the light sweep. `relative overflow-hidden` is
                 // required by ds-shine — its sweep is an ::after that has to be
@@ -263,6 +276,10 @@ export default function ReactiaMiniLandingPage() {
 
         </div>
       </section>
+
+      {showLimiteModal && (
+        <LimiteDiagnosticosModal onClose={() => setShowLimiteModal(false)} />
+      )}
     </div>
   );
 }

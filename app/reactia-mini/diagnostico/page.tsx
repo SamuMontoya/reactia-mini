@@ -1,7 +1,7 @@
 'use client';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { useForm, useWatch } from 'react-hook-form';
+import { useForm, useWatch, type FieldErrors } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { diagnosticoSchema, type Diagnostico } from '@/lib/schemas';
 import { diagnosticoConfig, TOTAL_PREGUNTAS } from '@/content/diagnostico-config';
@@ -29,6 +29,11 @@ import { ArrowLeft, ArrowRight, Check } from '@/components/icons';
 type Paso = { tipo: 'pregunta'; index: number } | { tipo: 'resumen' };
 
 const RESUMEN: Paso = { tipo: 'resumen' };
+
+/** The 12 main question ids, for checking draft completeness against the
+ *  actual questions rather than a raw answered-key count — see
+ *  draftEstaCompleto's doc comment. */
+const PREGUNTA_IDS = diagnosticoConfig.map((question) => question.id);
 
 export default function DiagnosticoPage() {
   const router = useRouter();
@@ -106,7 +111,7 @@ export default function DiagnosticoPage() {
 
     reset(draftPendiente.respuestas as Diagnostico, { keepDefaultValues: true });
     setPaso(
-      draftEstaCompleto(draftPendiente, TOTAL_PREGUNTAS)
+      draftEstaCompleto(draftPendiente, PREGUNTA_IDS)
         ? RESUMEN
         : { tipo: 'pregunta', index: pasoDesdeDraft(draftPendiente, TOTAL_PREGUNTAS) }
     );
@@ -197,6 +202,29 @@ export default function DiagnosticoPage() {
     },
     [lead, router]
   );
+
+  /**
+   * Runs when `handleSubmit` rejects the form on the review screen — e.g. a
+   * stale draft whose "otro" companion field never got filled. Without this,
+   * `onSubmit` above simply never ran and nothing on screen said why:
+   * `isSubmitting` never flipped, no error appeared, "Generar mi diagnóstico"
+   * just looked broken. This surfaces a message and, since the review screen
+   * doesn't show per-question errors itself, jumps straight to the first
+   * question that actually failed — the same "tap a card to fix it" pattern
+   * `handleEditFromResumen` already uses, just triggered automatically.
+   */
+  const onInvalid = useCallback((formErrors: FieldErrors<Diagnostico>) => {
+    const index = diagnosticoConfig.findIndex(
+      (question) =>
+        !!formErrors[question.id] || (question.otro && !!formErrors[question.otro.campo])
+    );
+    setSubmitError('Falta responder alguna pregunta obligatoria. Te llevamos a la primera que falta.');
+    if (index >= 0) {
+      setVolverAResumen(false);
+      setDireccion('atras');
+      setPaso({ tipo: 'pregunta', index });
+    }
+  }, []);
 
   /**
    * Validates only the question on screen.
@@ -379,7 +407,7 @@ export default function DiagnosticoPage() {
           <ResumenPaso
             values={getValues()}
             onEdit={handleEditFromResumen}
-            onSubmit={handleSubmit(onSubmit)}
+            onSubmit={handleSubmit(onSubmit, onInvalid)}
             isSubmitting={isSubmitting}
             submitError={submitError}
           />

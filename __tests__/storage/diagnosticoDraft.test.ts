@@ -89,21 +89,46 @@ describe('draftTieneRespuestas', () => {
 });
 
 describe('draftEstaCompleto', () => {
+  const PREGUNTA_IDS = ['modelo_tipo_negocio', 'descripcion_negocio', 'ticket_promedio_cop'];
+
   it('es falso si respondieron menos preguntas que el total', () => {
     const draft: DiagnosticoDraft = {
       respuestas: { modelo_tipo_negocio: 'producto' },
       paso: 0,
       guardadoEn: 1,
     };
-    expect(draftEstaCompleto(draft, 12)).toBe(false);
+    expect(draftEstaCompleto(draft, PREGUNTA_IDS as never)).toBe(false);
   });
 
-  it('es verdadero cuando las respuestas alcanzan el total de preguntas', () => {
-    const respuestas = Object.fromEntries(
-      Array.from({ length: 12 }, (_, i) => [`pregunta_${i}`, 'algo'])
-    );
-    const draft = { respuestas, paso: 11, guardadoEn: 1 } as unknown as DiagnosticoDraft;
-    expect(draftEstaCompleto(draft, 12)).toBe(true);
+  it('es verdadero cuando todas las preguntas principales tienen respuesta', () => {
+    const draft = {
+      respuestas: {
+        modelo_tipo_negocio: 'producto',
+        descripcion_negocio: 'Vendemos software',
+        ticket_promedio_cop: 500000,
+      },
+      paso: 11,
+      guardadoEn: 1,
+    } as unknown as DiagnosticoDraft;
+    expect(draftEstaCompleto(draft, PREGUNTA_IDS as never)).toBe(true);
+  });
+
+  it('no cuenta un campo "otro" adicional como si fuera una pregunta principal respondida', () => {
+    // Bug real: contar Object.keys(respuestas) contra el total permitía que
+    // un campo companion de "otro" (una key extra que no es una pregunta
+    // principal) inflara el conteo y marcara el borrador como completo con
+    // una pregunta principal real todavía sin responder.
+    const draft = {
+      respuestas: {
+        modelo_tipo_negocio: 'producto',
+        descripcion_negocio: 'Vendemos software',
+        // ticket_promedio_cop sin responder
+        origen_clientes_otro: 'Alianzas con contadores',
+      },
+      paso: 11,
+      guardadoEn: 1,
+    } as unknown as DiagnosticoDraft;
+    expect(draftEstaCompleto(draft, PREGUNTA_IDS as never)).toBe(false);
   });
 });
 
