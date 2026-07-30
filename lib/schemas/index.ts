@@ -22,9 +22,14 @@ export const gatekeepingSchema = z.object({
   }),
   nombre: z.string().min(2, 'Escribe tu nombre'),
   empresa: z.string().min(2, 'Escribe el nombre de tu empresa'),
+  // Fixed to Colombia: E.164 with the +57 dial code and exactly 10 national
+  // digits, matching what PhoneInput can ever actually produce (it caps
+  // input at 10 digits and only submits once that count is reached) — a
+  // looser range here would just accept malformed numbers PhoneInput itself
+  // never generates.
   whatsapp: z
     .string()
-    .regex(/^\+?[0-9]{10,15}$/, 'Escribe tu número de WhatsApp completo'),
+    .regex(/^\+57[0-9]{10}$/, 'Escribe tu número de WhatsApp completo (10 dígitos)'),
 });
 
 export type Gatekeeping = z.infer<typeof gatekeepingSchema>;
@@ -59,8 +64,7 @@ export const diagnosticoSchema = z
     descripcion_negocio: z
       .string()
       .trim()
-      .min(10, 'Cuéntanos un poco más — con una o dos frases basta')
-      .max(280, 'Máximo 280 caracteres'),
+      .min(10, 'Cuéntanos un poco más — con una o dos frases basta'),
     ticket_promedio_cop: z
       .number({ message: 'Escribe cuánto te paga un cliente' })
       .min(1, 'Debe ser mayor a cero'),
@@ -100,8 +104,7 @@ export const diagnosticoSchema = z
     mayor_frustracion: z
       .string()
       .trim()
-      .min(10, 'Cuéntanos un poco más — con una o dos frases basta')
-      .max(600, 'Máximo 600 caracteres'),
+      .min(10, 'Cuéntanos un poco más — con una o dos frases basta'),
   })
   // "Otro" is only meaningful when it was actually chosen, and when it was
   // chosen the free text carries the whole answer — so require it.

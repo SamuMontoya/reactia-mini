@@ -34,6 +34,48 @@ describe('gatekeepingSchema', () => {
     const data = { ...datosValidos, whatsapp: '123456' };
     expect(() => gatekeepingSchema.parse(data)).toThrow();
   });
+
+  it('acepta exactamente 10 dígitos nacionales con +57', () => {
+    expect(() =>
+      gatekeepingSchema.parse({ ...datosValidos, whatsapp: '+573001234567' })
+    ).not.toThrow();
+  });
+
+  it('rechaza 9 dígitos nacionales (uno de menos)', () => {
+    expect(() =>
+      gatekeepingSchema.parse({ ...datosValidos, whatsapp: '+57300123456' })
+    ).toThrow();
+  });
+
+  it('rechaza 11 dígitos nacionales (uno de más)', () => {
+    expect(() =>
+      gatekeepingSchema.parse({ ...datosValidos, whatsapp: '+5730012345678' })
+    ).toThrow();
+  });
+
+  it('rechaza un número sin el código de país +57', () => {
+    expect(() =>
+      gatekeepingSchema.parse({ ...datosValidos, whatsapp: '3001234567' })
+    ).toThrow();
+  });
+
+  it('rechaza un código de país distinto a +57', () => {
+    expect(() =>
+      gatekeepingSchema.parse({ ...datosValidos, whatsapp: '+13001234567' })
+    ).toThrow();
+  });
+
+  it('rechaza caracteres no numéricos', () => {
+    expect(() =>
+      gatekeepingSchema.parse({ ...datosValidos, whatsapp: '+5730012345ab' })
+    ).toThrow();
+  });
+
+  it('rechaza espacios dentro del número', () => {
+    expect(() =>
+      gatekeepingSchema.parse({ ...datosValidos, whatsapp: '+57 300 1234567' })
+    ).toThrow();
+  });
 });
 
 describe('rangos de facturación', () => {

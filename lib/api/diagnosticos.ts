@@ -1,7 +1,11 @@
 import { supabase } from '@/lib/supabase';
 import { diagnosticoSchema, type Diagnostico } from '@/lib/schemas';
 
-export const saveDiagnostico = async (leadId: string, respuestas: Diagnostico) => {
+export const saveDiagnostico = async (
+  leadId: string,
+  respuestas: Diagnostico,
+  deviceId: string
+) => {
   const validRespuestas = diagnosticoSchema.parse(respuestas);
 
   const { data: lead, error: leadError } = await supabase
@@ -26,5 +30,17 @@ export const saveDiagnostico = async (leadId: string, respuestas: Diagnostico) =
 
   if (error) throw new Error(error.message);
 
-  return { diagnosticoId: diagnostico.id };
+  const diagnosticoId = diagnostico.id;
+
+  const { error: deviceDiagError } = await supabase
+    .from('device_diagnostics')
+    .insert({
+      device_id: deviceId,
+      lead_id: leadId,
+      diagnostico_id: diagnosticoId,
+    });
+
+  if (deviceDiagError) throw new Error(deviceDiagError.message);
+
+  return { diagnosticoId };
 };

@@ -58,7 +58,7 @@ export default function CtaFinal({ cuelloBotella, score, resultadoId }: CtaFinal
       />
 
       <div className="ds-container relative py-16 sm:py-20">
-        <div className="mx-auto max-w-2xl text-center">
+        <div className="group mx-auto max-w-2xl text-center">
           <p
             className={`ds-reveal ${shown ? 'ds-reveal-in' : ''} ds-eyebrow`}
             style={{ transitionDelay: '200ms' }}
@@ -66,8 +66,11 @@ export default function CtaFinal({ cuelloBotella, score, resultadoId }: CtaFinal
             Aquí es donde entramos nosotros
           </p>
 
+          {/* `group` on the wrapper above so hovering anywhere in this closing
+              block — not just the button — nudges the headline, matching the
+              hover response the rest of the page's interactive cards got. */}
           <h2
-            className={`ds-reveal ${shown ? 'ds-reveal-in' : ''} mt-5 font-display text-display font-extrabold leading-[1.02] tracking-tight text-white`}
+            className={`ds-reveal ${shown ? 'ds-reveal-in' : ''} mt-5 font-display text-display font-extrabold leading-[1.02] tracking-tight text-white transition-transform duration-300 ease-[var(--ease-brand)] group-hover:scale-[1.02]`}
             style={step(0)}
           >
             ¿Necesitas ayuda?

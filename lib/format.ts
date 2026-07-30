@@ -91,3 +91,38 @@ export const caretAfterFormat = (
   }
   return 0;
 };
+
+/* ────────────────────────── Relative time ──────────────────────────
+ * Instagram-style "hace 3 horas" / "hace 2 días" / "hace 2 semanas".
+ *
+ * Hand-rolled rather than date-fns' formatDistanceToNow, which produces
+ * "hace alrededor de 3 horas" in Spanish — that hedge ("alrededor de") reads as
+ * clutter in a card where the timestamp is quiet metadata.
+ *
+ * Singular/plural is handled per unit because Spanish needs it ("hace 1 día"
+ * vs "hace 2 días"), and the thresholds stop at months: anything older than a
+ * year is still "hace N meses", which is fine for a tool whose results expire
+ * after 7 days anyway.
+ * ------------------------------------------------------------------------ */
+
+const UNIDADES: { limite: number; segundos: number; uno: string; varios: string }[] = [
+  { limite: 60, segundos: 1, uno: 'un segundo', varios: 'segundos' },
+  { limite: 3600, segundos: 60, uno: 'un minuto', varios: 'minutos' },
+  { limite: 86400, segundos: 3600, uno: 'una hora', varios: 'horas' },
+  { limite: 604800, segundos: 86400, uno: 'un día', varios: 'días' },
+  { limite: 2629800, segundos: 604800, uno: 'una semana', varios: 'semanas' },
+  { limite: Infinity, segundos: 2629800, uno: 'un mes', varios: 'meses' },
+];
+
+/** "hace 3 horas". `ahora` is injectable so this stays testable. */
+export const formatHace = (fecha: Date | string, ahora: Date = new Date()): string => {
+  const desde = typeof fecha === 'string' ? new Date(fecha) : fecha;
+  const segundos = Math.max(0, Math.floor((ahora.getTime() - desde.getTime()) / 1000));
+
+  if (segundos < 45) return 'hace unos segundos';
+
+  const unidad = UNIDADES.find((u) => segundos < u.limite) ?? UNIDADES[UNIDADES.length - 1];
+  const cantidad = Math.max(1, Math.round(segundos / unidad.segundos));
+
+  return cantidad === 1 ? `hace ${unidad.uno}` : `hace ${cantidad} ${unidad.varios}`;
+};

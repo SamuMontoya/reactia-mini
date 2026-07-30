@@ -9,9 +9,15 @@ type DiagnosticoSingleResult = {
   data: { id: string } | null;
   error: { message: string } | null;
 };
+type DeviceDiagResult = {
+  error: { message: string } | null;
+};
 
 const mockLeadSingle = jest.fn<() => Promise<LeadSingleResult>>();
 const mockDiagnosticoSingle = jest.fn<() => Promise<DiagnosticoSingleResult>>();
+const mockDeviceDiagInsert = jest.fn<
+  (payload: { device_id: string; lead_id: string; diagnostico_id: string }) => Promise<DeviceDiagResult>
+>();
 
 jest.mock('@/lib/supabase', () => ({
   supabase: {
@@ -23,6 +29,22 @@ jest.mock('@/lib/supabase', () => ({
               single: mockLeadSingle,
             })),
           })),
+        };
+      }
+
+      if (table === 'diagnosticos') {
+        return {
+          insert: jest.fn(() => ({
+            select: jest.fn(() => ({
+              single: mockDiagnosticoSingle,
+            })),
+          })),
+        };
+      }
+
+      if (table === 'device_diagnostics') {
+        return {
+          insert: mockDeviceDiagInsert,
         };
       }
 
@@ -55,6 +77,7 @@ const validRespuestas = {
 beforeEach(() => {
   mockLeadSingle.mockReset();
   mockDiagnosticoSingle.mockReset();
+  mockDeviceDiagInsert.mockReset();
 });
 
 describe('saveDiagnostico', () => {
@@ -64,8 +87,9 @@ describe('saveDiagnostico', () => {
       data: { id: 'diagnostico-1' },
       error: null,
     });
+    mockDeviceDiagInsert.mockResolvedValue({ error: null });
 
-    const result = await saveDiagnostico('lead-1', validRespuestas);
+    const result = await saveDiagnostico('lead-1', validRespuestas, 'device-1');
 
     expect(result).toEqual({ diagnosticoId: 'diagnostico-1' });
   });
@@ -77,7 +101,39 @@ describe('saveDiagnostico', () => {
     });
 
     await expect(
-      saveDiagnostico('lead-inexistente', validRespuestas)
+      saveDiagnostico('lead-inexistente', validRespuestas, 'device-1')
     ).rejects.toThrow('Lead no encontrado');
+  });
+
+  it('inserta registro en device_diagnostics al guardar diagnóstico', async () => {
+    mockLeadSingle.mockResolvedValue({ data: { id: 'lead-1' }, error: null });
+    mockDiagnosticoSingle.mockResolvedValue({
+      data: { id: 'diagnostico-1' },
+      error: null,
+    });
+    mockDeviceDiagInsert.mockResolvedValue({ error: null });
+
+    await saveDiagnostico('lead-1', validRespuestas, 'device-123');
+
+    expect(mockDeviceDiagInsert).toHaveBeenCalledWith({
+      device_id: 'device-123',
+      lead_id: 'lead-1',
+      diagnostico_id: 'diagnostico-1',
+    });
+  });
+
+  it('lanza error si falla la inserción en device_diagnostics', async () => {
+    mockLeadSingle.mockResolvedValue({ data: { id: 'lead-1' }, error: null });
+    mockDiagnosticoSingle.mockResolvedValue({
+      data: { id: 'diagnostico-1' },
+      error: null,
+    });
+    mockDeviceDiagInsert.mockResolvedValue({
+      error: { message: 'Foreign key constraint failed' },
+    });
+
+    await expect(
+      saveDiagnostico('lead-1', validRespuestas, 'device-123')
+    ).rejects.toThrow('Foreign key constraint failed');
   });
 });

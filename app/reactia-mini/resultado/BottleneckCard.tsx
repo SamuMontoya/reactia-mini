@@ -1,5 +1,12 @@
 import { AREA_DESCRIPCIONES, AREA_LABELS } from '@/content/diagnostico-config';
-import { Alert, CircleCheck, CircleX } from '@/components/icons';
+import {
+  AREA_ICONS,
+  Alert,
+  CircleCheck,
+  CircleX,
+  MarkCheck,
+  MarkX,
+} from '@/components/icons';
 import type { Area } from './scoreScale';
 
 type BottleneckCardProps = {
@@ -10,67 +17,78 @@ type BottleneckCardProps = {
 /**
  * The one thing the reader has to leave with: the problem, and the fix.
  *
- * Two tinted panels rather than one red card. The whole card being red made the
- * fix look like part of the bad news; splitting it means the diagnosis reads as
- * the warning (red, ✕) and the answer reads as the answer (amber surface, green
- * heading, ✓). Both panels share the same shape — glyph + large heading, then
- * text — so the pair reads as one before/after rather than two unrelated boxes.
+ * Colour does the emotional work here, and it is the one place in the product
+ * allowed to be loud: blood red for the diagnosis, traffic-light green for the
+ * answer (--color-alerta / --color-exito). Both are separate tokens from the
+ * muted signal-* trio, which stays the form-validation palette — a red this
+ * strong on a "campo requerido" message would read as punishment.
+ *
+ * Both panels share one structure — glyph + heading, a rule, then the text —
+ * top-aligned so the leftover space falls at the bottom of a filled panel rather
+ * than opening a hole between the heading and the paragraph.
+ *
+ * Hover lifts the panel and blooms a coloured glow behind it, so the pair
+ * responds to the cursor instead of sitting inert.
  */
 export default function BottleneckCard({
   cuelloBotella,
   proximoPaso,
 }: BottleneckCardProps) {
+  const AreaIcon = AREA_ICONS[cuelloBotella];
+
   return (
-    <div className="ds-card flex h-full flex-col p-5 sm:p-6">
-      <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-signal-low">
+    <div className="ds-card flex h-full flex-col bg-gradient-to-br from-white to-amber/[0.04] p-5 sm:p-6">
+      <p className="flex items-center gap-2 text-xs font-medium uppercase tracking-[0.2em] text-alerta">
         <Alert className="h-4 w-4 shrink-0" />
         Tu freno principal
       </p>
 
       <div className="mt-4 grid flex-1 gap-4 md:grid-cols-2">
         {/* ── The problem ── */}
-        <div className="relative flex flex-col overflow-hidden rounded-[var(--radius-card)] border-2 border-signal-low/70 bg-gradient-to-br from-signal-low/[0.09] to-signal-low/[0.02] p-5">
-          {/* Oversized echo of the panel's own glyph, the same trick the KPI
-              tiles use with their index number: fills the surface and reinforces
-              which half you're reading without competing with the text. */}
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -bottom-10 -right-6 select-none text-signal-low/[0.09]"
-          >
-            <CircleX className="h-48 w-48" holeColor="transparent" />
-          </span>
+        <div className="group relative flex flex-col overflow-hidden rounded-[var(--radius-card)] border-2 border-alerta/60 bg-gradient-to-br from-alerta/[0.10] via-white to-alerta/[0.04] p-5 transition-all duration-300 ease-[var(--ease-brand)] hover:-translate-y-1 hover:border-alerta hover:shadow-[0_16px_36px_rgba(208,2,27,0.20)]">
+          {/* Bare ✕ rather than the enclosed disc: at watermark scale a circle
+              reads as a stray blob. Grows and brightens with the cursor. */}
+          <MarkX
+            className="pointer-events-none absolute -bottom-10 -right-8 h-48 w-48 text-alerta/[0.09] transition-all duration-500 ease-[var(--ease-brand)] group-hover:scale-110 group-hover:text-alerta/[0.16]"
+          />
 
-          <h2 className="relative flex items-center gap-2.5 font-display text-3xl font-extrabold leading-none tracking-tight text-signal-low">
+          <h2 className="relative flex items-center gap-2.5 font-display text-3xl font-extrabold leading-none tracking-tight text-alerta">
             <CircleX className="h-8 w-8 shrink-0" />
             El problema
           </h2>
 
-          {/* One paragraph, one style: the area name runs straight into its
-              explanation with no weight or colour change, so it reads as prose
-              rather than as a label with a caption. `mt-auto` matches the
-              solution panel — both paragraphs sit on the floor of the card. */}
-          <p className="relative mt-auto pt-4 text-lg leading-relaxed text-ink">
-            {AREA_LABELS[cuelloBotella]}. {AREA_DESCRIPCIONES[cuelloBotella]}
+          <span
+            aria-hidden
+            className="relative mt-4 h-px bg-gradient-to-r from-alerta/50 to-transparent"
+          />
+
+          <p className="relative mt-4 flex items-center gap-2 font-display text-xl font-bold leading-snug text-ink">
+            <AreaIcon className="h-5 w-5 shrink-0 text-alerta" />
+            {AREA_LABELS[cuelloBotella]}
+          </p>
+
+          <p className="relative mt-2 text-base leading-relaxed text-stone">
+            {AREA_DESCRIPCIONES[cuelloBotella]}
           </p>
         </div>
 
         {/* ── The solution ── */}
-        <div className="relative flex flex-col overflow-hidden rounded-[var(--radius-card)] border-2 border-signal-high/70 bg-gradient-to-br from-amber/[0.14] to-amber/[0.04] p-5">
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -bottom-10 -right-6 select-none text-signal-high/[0.09]"
-          >
-            <CircleCheck className="h-48 w-48" holeColor="transparent" />
-          </span>
+        <div className="group relative flex flex-col overflow-hidden rounded-[var(--radius-card)] border-2 border-exito/60 bg-gradient-to-br from-exito/[0.10] via-white to-exito/[0.04] p-5 transition-all duration-300 ease-[var(--ease-brand)] hover:-translate-y-1 hover:border-exito hover:shadow-[0_16px_36px_rgba(20,194,90,0.22)]">
+          <MarkCheck
+            className="pointer-events-none absolute -bottom-10 -right-8 h-48 w-48 text-exito/[0.11] transition-all duration-500 ease-[var(--ease-brand)] group-hover:scale-110 group-hover:text-exito/[0.20]"
+          />
 
-          <h2 className="relative flex items-center gap-2.5 font-display text-3xl font-extrabold leading-none tracking-tight text-signal-high">
-            <CircleCheck className="h-8 w-8 shrink-0" />
+          <h2 className="relative flex items-center gap-2.5 font-display text-3xl font-extrabold leading-none tracking-tight text-exito-dim">
+            <CircleCheck className="h-8 w-8 shrink-0 text-exito" />
             La solución
           </h2>
 
-          <p className="relative mt-auto pt-4 text-lg leading-relaxed text-ink">
-            {proximoPaso}
-          </p>
+          <span
+            aria-hidden
+            className="relative mt-4 h-px bg-gradient-to-r from-exito/50 to-transparent"
+          />
+
+          <p className="relative mt-4 text-lg leading-relaxed text-ink">{proximoPaso}</p>
         </div>
       </div>
     </div>

@@ -7,7 +7,9 @@ import { gatekeepingSchema, type Gatekeeping } from '@/lib/schemas';
 import { FACTURACION_RANGOS } from '@/content/facturacion-rangos';
 import { trackEvent } from '@/lib/analytics/trackEvent';
 import { saveLead } from '@/lib/storage/leadStorage';
+import { postJson } from '@/lib/api/clientFetch';
 import { getErrorMessage } from '@/lib/getErrorMessage';
+import { useDeviceId } from '@/lib/hooks/useDeviceId';
 import Field from '@/components/ui/Field';
 import Dropdown from '@/components/ui/Dropdown';
 import PhoneInput from '@/components/ui/PhoneInput';
@@ -30,6 +32,7 @@ export default function GatekeepingPage() {
   const router = useRouter();
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const deviceId = useDeviceId();
 
   const {
     register,
@@ -46,22 +49,21 @@ export default function GatekeepingPage() {
     setError(null);
 
     try {
-      const response = await fetch('/api/mini/gatekeeping', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data),
-      });
+      const response = await postJson('/api/mini/gatekeeping', { ...data, deviceId });
 
       if (!response.ok) {
         const body = await response.json().catch(() => null);
         throw new Error(body?.error ?? 'No pudimos guardar tus datos. Intenta de nuevo.');
       }
 
-      const { leadId, califica } = await response.json();
+      const { leadId, califica, deviceId: returnedDeviceId } = await response.json();
       trackEvent('gatekeeping_submit', { califica });
+
+      const finalDeviceId = returnedDeviceId ?? deviceId;
 
       saveLead({
         leadId,
+        deviceId: finalDeviceId,
         nombre: data.nombre,
         empresa: data.empresa,
         whatsapp: data.whatsapp,
@@ -82,11 +84,33 @@ export default function GatekeepingPage() {
 
   return (
     <div className="relative flex h-full flex-1 w-full">
-      {/* Grid: left dark panel (1/3), right white panel (2/3) - full width */}
-      <div className="grid h-full w-full lg:grid-cols-[1fr_2fr]">
-        {/* Left: Dark panel with copy - 1/3 width */}
+      {/* Grid: left dark panel (1/3), right white panel (2/3) - full width.
+          No h-full here on purpose. This is the sole child of a row-direction
+          flex container (the wrapper above), so its HEIGHT (the cross axis in a
+          row) should come from that parent's default align-items:stretch — but
+          stretch only applies when the child's own height is 'auto'. h-full
+          (height:100%) is an explicit value, so it disabled stretch, and the
+          percentage fell back to resolving against nothing definite across this
+          flex→grid boundary — leaving the grid sized to its own content, about
+          86px short of the parent. That gap was the paper-coloured band showing
+          above the footer. Dropping h-full lets stretch do the job. */}
+      {/* `grid-cols-1` as the mobile base, not just the implicit single-column
+          default: an implicit auto-flow track sizes to `auto` (content-based)
+          same as a flex/grid ITEM does, so even with min-w-0 on the panel
+          itself, the TRACK it sits in was still refusing to shrink below the
+          panel's min-content width and dragging the whole page wider than the
+          viewport. An explicit `1fr` track doesn't have that floor. */}
+      <div className="grid w-full grid-cols-1 lg:grid-cols-[1fr_2fr]">
+        {/* Left: Dark panel with copy - 1/3 width.
+            `min-w-0` matters here: this panel is a grid item, and grid/flex
+            items default to `min-width: auto` — they refuse to shrink below
+            their own content's natural width. On mobile the single-column
+            track is exactly the viewport width, but the copy block inside
+            wanted ~394px, so the panel (and with it the whole page) was
+            growing past the viewport to fit it instead of letting that copy
+            wrap inside the narrower track. min-w-0 lets it actually shrink. */}
         <div
-          className="relative z-10 flex h-full flex-col justify-center p-6 lg:p-12 bg-ink overflow-hidden"
+          className="relative z-10 flex h-full min-w-0 flex-col justify-center p-6 lg:p-12 bg-ink overflow-hidden"
           aria-hidden="true"
         >
           {/* Diagonal line pattern - subtle diagnostic/scan aesthetic */}
@@ -275,7 +299,11 @@ export default function GatekeepingPage() {
                   className="ds-btn ds-btn-amber ds-btn-lg w-full"
                 >
                   {isSubmitting ? 'Guardando...' : 'Continuar a las preguntas'}
-                  {!isSubmitting && <ArrowRight className="h-5 w-5" />}
+                  {/* Hidden on mobile: at this button's width, "Continuar a las
+                      preguntas" leaves the arrow almost no room and it renders
+                      tiny — worse than not having it. Desktop has the width to
+                      spare, so it stays there. */}
+                  {!isSubmitting && <ArrowRight className="hidden h-5 w-5 sm:inline" />}
                 </button>
 
                 <p className="flex items-start justify-center gap-1.5 text-sm text-stone">

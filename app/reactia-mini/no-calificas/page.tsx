@@ -6,6 +6,7 @@ import { z } from 'zod';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { trackEvent } from '@/lib/analytics/trackEvent';
 import { getErrorMessage } from '@/lib/getErrorMessage';
+import { apiFetch } from '@/lib/api/clientFetch';
 import Field from '@/components/ui/Field';
 import { ArrowRight } from '@/components/icons';
 
@@ -45,7 +46,7 @@ function NoCualificasContent() {
 
     try {
       if (data.email) {
-        const response = await fetch(`/api/mini/leads/${leadId}/email`, {
+        const response = await apiFetch(`/api/mini/leads/${leadId}/email`, {
           method: 'PATCH',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ email: data.email }),

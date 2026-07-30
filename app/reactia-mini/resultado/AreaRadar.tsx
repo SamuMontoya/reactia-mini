@@ -131,7 +131,7 @@ export default function AreaRadar({ scores, cuelloBotella }: AreaRadarProps) {
             cx={x}
             cy={y}
             r={esCuello ? 5.5 : 3.5}
-            fill={esCuello ? 'var(--color-signal-low)' : 'var(--color-amber)'}
+            fill={esCuello ? 'var(--color-alerta)' : 'var(--color-amber)'}
             stroke="var(--color-white)"
             strokeWidth="1.5"
             style={{
@@ -160,7 +160,7 @@ export default function AreaRadar({ scores, cuelloBotella }: AreaRadarProps) {
               className="font-body"
               fontSize="11"
               fontWeight="500"
-              fill={esCuello ? 'var(--color-signal-low)' : 'var(--color-stone)'}
+              fill={esCuello ? 'var(--color-alerta)' : 'var(--color-stone)'}
             >
               {AREA_LABELS_CORTOS[area]}
             </text>
@@ -172,7 +172,7 @@ export default function AreaRadar({ scores, cuelloBotella }: AreaRadarProps) {
               className="font-display"
               fontSize="13"
               fontWeight="700"
-              fill={esCuello ? 'var(--color-signal-low)' : 'var(--color-ink)'}
+              fill={esCuello ? 'var(--color-alerta)' : 'var(--color-ink)'}
             >
               {score}
             </text>

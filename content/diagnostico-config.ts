@@ -1,7 +1,9 @@
 import type { Diagnostico } from '@/lib/schemas';
 
 /**
- * The 11 diagnóstico questions.
+ * The diagnóstico questions. Keep this list and TOTAL_PREGUNTAS as the only
+ * source of truth for the count — every place in the app that mentions "N
+ * preguntas" imports TOTAL_PREGUNTAS rather than hardcoding a number.
  *
  * Copy rules applied throughout: no English, no business jargon, no words a
  * shop owner would have to look up. "avatar" → "cliente ideal", "outbound" →
@@ -134,7 +136,6 @@ export const diagnosticoConfig: readonly DiagnosticoQuestion[] = [
     titulo: 'Cuéntanos sobre tu negocio',
     ayuda: 'Con dos o tres frases basta: ¿qué hace tu empresa y a quién le sirve?',
     tipo: 'texto',
-    maxLength: 280,
     filas: 4,
     sinPegar: true,
     placeholder:
@@ -244,6 +245,7 @@ export const diagnosticoConfig: readonly DiagnosticoQuestion[] = [
     ayuda:
       'Escríbelo con tus palabras. Esto es lo que hace que tu diagnóstico hable de tu negocio y no de un negocio cualquiera.',
     tipo: 'texto',
+    sinPegar: true,
     placeholder:
       'Ej: consigo clientes nuevos pero no vuelven a comprar, y yo termino metido en todo.',
   },

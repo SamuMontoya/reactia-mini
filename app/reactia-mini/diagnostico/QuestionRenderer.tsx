@@ -1,12 +1,13 @@
 'use client';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Controller, type Control, type FieldErrors } from 'react-hook-form';
 import type { Diagnostico } from '@/lib/schemas';
 import { AREA_LABELS, type DiagnosticoQuestion } from '@/content/diagnostico-config';
 import OptionCards from '@/components/ui/OptionCards';
 import ScaleInput from '@/components/ui/ScaleInput';
 import CurrencyInput from '@/components/ui/CurrencyInput';
-import { Alert } from '@/components/icons';
+import DictateButton from '@/components/ui/DictateButton';
+import { AREA_ICONS, Alert } from '@/components/icons';
 
 type QuestionRendererProps = {
   question: DiagnosticoQuestion;
@@ -36,9 +37,15 @@ export default function QuestionRenderer({
   // Set when a paste is rejected on a `sinPegar` question, so we can explain
   // why the text didn't appear instead of leaving the user thinking it broke.
   const [pegadoBloqueado, setPegadoBloqueado] = useState(false);
+  // Swaps the (still-empty, while dictating) textarea's own placeholder to
+  // say so — the interim preview under DictateButton is easy to miss on a
+  // phone, but text where the reader is already looking isn't.
+  const [dictando, setDictando] = useState(false);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   useEffect(() => {
     setPegadoBloqueado(false);
+    setDictando(false);
   }, [question.id]);
 
   const labelId = `pregunta-${question.id}`;
@@ -49,182 +56,219 @@ export default function QuestionRenderer({
     ? (errors[otro.campo]?.message as string | undefined)
     : undefined;
 
+  const AreaIcon = AREA_ICONS[question.area];
+
   return (
-    <div>
-      {/* Amber wash, never a filled chip — the wizard already uses solid amber
-          for the selected option and the progress bar. */}
-      <p className="ds-wash inline-block py-1.5 pl-3 pr-3.5">
-        <span className="ds-eyebrow">{AREA_LABELS[question.area]}</span>
-      </p>
+    <div className="relative">
+      {/* Contained halo — the brand's soft-light motif, scoped to this wrapper
+          (not the page) so it can't bleed into the sticky nav/footer below. A
+          little visual movement on every question, not just the "big moment"
+          screens. Everything else below lives inside its own `relative`
+          wrapper: non-positioned content paints BEHIND any positioned element
+          regardless of DOM order, so without that wrapper the halo (absolutely
+          positioned) would sit on top of the plain input area beneath it. */}
+      <div
+        aria-hidden
+        className="ds-halo pointer-events-none -left-16 -top-24 h-72 w-72 opacity-70"
+      />
 
-      <h2
-        id={labelId}
-        className="mt-4 font-display text-3xl font-bold text-ink sm:text-4xl"
-      >
-        {question.titulo}
-      </h2>
+      <div className="relative">
+        {/* Amber wash, never a filled chip — the wizard already uses solid
+            amber for the selected option and the progress bar. The area icon
+            ties this back to the same glyphs used for these areas on the
+            result page. */}
+        <p className="ds-wash inline-flex items-center gap-2 py-1.5 pl-3 pr-3.5">
+          <AreaIcon className="h-3.5 w-3.5 text-amber" />
+          <span className="ds-eyebrow">{AREA_LABELS[question.area]}</span>
+        </p>
 
-      {question.ayuda && <p className="mt-3 text-lg text-stone">{question.ayuda}</p>}
+        <h2
+          id={labelId}
+          className="mt-4 font-display text-3xl font-bold text-ink sm:text-4xl"
+        >
+          {question.titulo}
+        </h2>
 
-      <div className="mt-8">
-        {question.tipo === 'opciones' && (
-          <Controller
-            name={question.id}
-            control={control}
-            render={({ field }) => (
-              <OptionCards
-                name={field.name}
-                options={question.opciones ?? []}
-                value={field.value as string | undefined}
-                onChange={field.onChange}
-                columns={question.columnas ?? 1}
-                labelId={labelId}
-                invalid={!!error}
-              />
-            )}
-          />
-        )}
+        {question.ayuda && <p className="mt-3 text-lg text-stone">{question.ayuda}</p>}
 
-        {question.tipo === 'escala' && (
-          <Controller
-            name={question.id}
-            control={control}
-            render={({ field }) => (
-              <ScaleInput
-                name={field.name}
-                value={field.value as number | undefined}
-                onChange={field.onChange}
-                lowLabel={question.escala?.bajo ?? '1'}
-                highLabel={question.escala?.alto ?? '5'}
-                labelId={labelId}
-              />
-            )}
-          />
-        )}
+        <div className="mt-8">
+          {question.tipo === 'opciones' && (
+            <Controller
+              name={question.id}
+              control={control}
+              render={({ field }) => (
+                <OptionCards
+                  name={field.name}
+                  options={question.opciones ?? []}
+                  value={field.value as string | undefined}
+                  onChange={field.onChange}
+                  columns={question.columnas ?? 1}
+                  labelId={labelId}
+                  invalid={!!error}
+                />
+              )}
+            />
+          )}
 
-        {question.tipo === 'moneda' && (
-          <Controller
-            name={question.id}
-            control={control}
-            render={({ field }) => (
-              <CurrencyInput
-                id={question.id}
-                value={field.value as number | null | undefined}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                placeholder={question.placeholder}
-                invalid={!!error}
-              />
-            )}
-          />
-        )}
+          {question.tipo === 'escala' && (
+            <Controller
+              name={question.id}
+              control={control}
+              render={({ field }) => (
+                <ScaleInput
+                  name={field.name}
+                  value={field.value as number | undefined}
+                  onChange={field.onChange}
+                  lowLabel={question.escala?.bajo ?? '1'}
+                  highLabel={question.escala?.alto ?? '5'}
+                  labelId={labelId}
+                />
+              )}
+            />
+          )}
 
-        {question.tipo === 'texto' && (
-          <Controller
-            name={question.id}
-            control={control}
-            render={({ field }) => {
-              const texto = (field.value as string | undefined) ?? '';
-              const max = question.maxLength;
+          {question.tipo === 'moneda' && (
+            <Controller
+              name={question.id}
+              control={control}
+              render={({ field }) => (
+                <CurrencyInput
+                  id={question.id}
+                  value={field.value as number | null | undefined}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  placeholder={question.placeholder}
+                  invalid={!!error}
+                />
+              )}
+            />
+          )}
 
-              return (
-                <div>
-                  <textarea
-                    id={question.id}
-                    rows={question.filas ?? 5}
-                    placeholder={question.placeholder}
-                    maxLength={max}
-                    aria-invalid={error ? true : undefined}
-                    aria-describedby={max ? `${question.id}-contador` : undefined}
-                    value={texto}
-                    onChange={field.onChange}
-                    onBlur={field.onBlur}
-                    onPaste={
-                      question.sinPegar
-                        ? (event) => {
-                            event.preventDefault();
-                            setPegadoBloqueado(true);
-                          }
-                        : undefined
-                    }
-                    onDrop={question.sinPegar ? (event) => event.preventDefault() : undefined}
-                    className="ds-input resize-y"
-                  />
+          {question.tipo === 'texto' && (
+            <Controller
+              name={question.id}
+              control={control}
+              render={({ field }) => {
+                const texto = (field.value as string | undefined) ?? '';
+                const max = question.maxLength;
 
-                  <div className="mt-1.5 flex items-start justify-between gap-3">
-                    {/* Announced politely rather than as an alert: the user did
-                        nothing wrong, they just need to know why nothing landed. */}
-                    <p
-                      aria-live="polite"
-                      className={`text-sm text-stone transition-opacity ${
-                        pegadoBloqueado ? 'opacity-100' : 'opacity-0'
-                      }`}
-                    >
-                      {pegadoBloqueado ? 'Escríbelo con tus palabras, sin pegar.' : ' '}
-                    </p>
+                return (
+                  <div>
+                    <textarea
+                      ref={textareaRef}
+                      id={question.id}
+                      rows={question.filas ?? 5}
+                      placeholder={
+                        dictando && !texto
+                          ? 'Estoy tomando nota de lo que dices. Una vez termines de dictar, el texto aparecerá aquí.'
+                          : question.placeholder
+                      }
+                      maxLength={max}
+                      aria-invalid={error ? true : undefined}
+                      aria-describedby={max ? `${question.id}-contador` : undefined}
+                      value={texto}
+                      onChange={field.onChange}
+                      onBlur={field.onBlur}
+                      onPaste={
+                        question.sinPegar
+                          ? (event) => {
+                              event.preventDefault();
+                              setPegadoBloqueado(true);
+                            }
+                          : undefined
+                      }
+                      onDrop={
+                        question.sinPegar ? (event) => event.preventDefault() : undefined
+                      }
+                      className="ds-input resize-y"
+                    />
 
-                    {max && (
-                      <p
-                        id={`${question.id}-contador`}
-                        className={`shrink-0 text-sm tabular-nums ${
-                          texto.length >= max ? 'text-signal-mid' : 'text-stone'
-                        }`}
-                      >
-                        {texto.length}/{max}
+                    {/* Dictar on the left, the character counter on the
+                        right — opposite ends of the same row so neither
+                        competes with the other for attention. */}
+                    <div className="mt-1.5 flex items-center justify-between gap-3">
+                      <DictateButton
+                        onTranscript={(chunk) => {
+                          const next = texto ? `${texto} ${chunk}` : chunk;
+                          field.onChange(max ? next.slice(0, max) : next);
+                        }}
+                        onFocusFallback={() => textareaRef.current?.focus()}
+                        onListeningChange={setDictando}
+                      />
+
+                      {max && (
+                        <p
+                          id={`${question.id}-contador`}
+                          className={`shrink-0 text-sm tabular-nums ${
+                            texto.length >= max ? 'text-signal-mid' : 'text-stone'
+                          }`}
+                        >
+                          {texto.length}/{max}
+                        </p>
+                      )}
+                    </div>
+
+                    {/* Announced politely rather than as an alert: the user
+                        did nothing wrong, they just need to know why nothing
+                        landed. */}
+                    {pegadoBloqueado && (
+                      <p aria-live="polite" className="mt-1.5 text-sm text-stone">
+                        Escríbelo con tus palabras, sin pegar.
                       </p>
                     )}
                   </div>
-                </div>
-              );
-            }}
-          />
-        )}
-      </div>
-
-      {error && (
-        <p
-          role="alert"
-          className="mt-3 flex items-center gap-1.5 text-base text-signal-low"
-        >
-          <Alert className="h-5 w-5 shrink-0" />
-          {error}
-        </p>
-      )}
-
-      {/* Light personalisation: a short text box that only appears once "Otro"
-          is chosen, so it costs nothing to everyone who picked a listed answer. */}
-      {otroVisible && otro && (
-        <div className="ds-rule-amber mt-5">
-          <label
-            htmlFor={otro.campo}
-            className="block font-display text-base font-semibold text-ink"
-          >
-            {otro.label}
-          </label>
-          <Controller
-            name={otro.campo}
-            control={control}
-            render={({ field }) => (
-              <input
-                id={otro.campo}
-                type="text"
-                maxLength={120}
-                placeholder={otro.placeholder}
-                aria-invalid={otroError ? true : undefined}
-                value={(field.value as string | undefined) ?? ''}
-                onChange={field.onChange}
-                onBlur={field.onBlur}
-                className="ds-input mt-2"
-              />
-            )}
-          />
-          {otroError && (
-            <p role="alert" className="mt-1.5 text-sm text-signal-low">
-              {otroError}
-            </p>
+                );
+              }}
+            />
           )}
         </div>
-      )}
+
+        {error && (
+          <p
+            role="alert"
+            className="mt-3 flex items-center gap-1.5 text-base text-signal-low"
+          >
+            <Alert className="h-5 w-5 shrink-0" />
+            {error}
+          </p>
+        )}
+
+        {/* Light personalisation: a short text box that only appears once
+            "Otro" is chosen, so it costs nothing to everyone who picked a
+            listed answer. */}
+        {otroVisible && otro && (
+          <div className="ds-rule-amber mt-5">
+            <label
+              htmlFor={otro.campo}
+              className="block font-display text-base font-semibold text-ink"
+            >
+              {otro.label}
+            </label>
+            <Controller
+              name={otro.campo}
+              control={control}
+              render={({ field }) => (
+                <input
+                  id={otro.campo}
+                  type="text"
+                  maxLength={120}
+                  placeholder={otro.placeholder}
+                  aria-invalid={otroError ? true : undefined}
+                  value={(field.value as string | undefined) ?? ''}
+                  onChange={field.onChange}
+                  onBlur={field.onBlur}
+                  className="ds-input mt-2"
+                />
+              )}
+            />
+            {otroError && (
+              <p role="alert" className="mt-1.5 text-sm text-signal-low">
+                {otroError}
+              </p>
+            )}
+          </div>
+        )}
+      </div>
     </div>
   );
 }

@@ -42,13 +42,18 @@ export default function OptionCards({
       aria-invalid={invalid || undefined}
       className={`grid gap-3 ${columns === 2 ? 'sm:grid-cols-2' : 'grid-cols-1'}`}
     >
-      {options.map((option) => {
+      {options.map((option, index) => {
         const checked = value === option.value;
 
         return (
           <label
             key={option.value}
-            className={`group flex cursor-pointer items-center gap-3 rounded-[var(--radius-card)] border bg-white px-4 py-4 transition-all duration-200 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink ${
+            style={{ animationDelay: `${index * 45}ms` }}
+            // Staggered on mount, same as the question block's own slide-in —
+            // a little life in the one part of the wizard the reader spends
+            // the most time looking at, without adding a second, competing
+            // motion once the options are actually on screen.
+            className={`ds-animate-up group flex cursor-pointer items-center gap-3 rounded-[var(--radius-card)] border bg-white px-4 py-4 transition-all duration-200 has-[:focus-visible]:outline has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink ${
               checked
                 ? 'border-amber shadow-[var(--shadow-md)]'
                 : 'border-dust hover:border-stone/60'

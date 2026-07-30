@@ -36,13 +36,20 @@ export const computeOverallScore = (scores: ScoringResult['scores']): number => 
   return Math.round(total);
 };
 
-/** Three bands, matching the signal tokens in globals.css. */
+/**
+ * Three bands, on the vivid diagnostic palette — not the muted signal-* trio.
+ *
+ * These bars sit next to the bottleneck panels and are read as the same kind of
+ * statement, so they carry the same saturation: blood red, orange, traffic
+ * green. Scoped to the result page's charts on purpose; the muted signal colours
+ * still own form validation, where this much colour would be shouting.
+ */
 export const scoreColor = (score: number): string =>
   score < 40
-    ? 'var(--color-signal-low)'
+    ? 'var(--color-alerta)'
     : score <= 70
-      ? 'var(--color-signal-mid)'
-      : 'var(--color-signal-high)';
+      ? 'var(--color-naranja)'
+      : 'var(--color-exito)';
 
 export const scoreVeredicto = (score: number): string =>
   score < 40

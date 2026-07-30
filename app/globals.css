@@ -27,6 +27,18 @@
   --color-signal-mid: #b7791f;
   --color-signal-high: #4c6b3c;
 
+  /* ── Vivid diagnostic palette ──
+     Deliberately separate from the muted signal-* trio above, which stays the
+     form-validation palette (Field, PhoneInput, inline errors). These are for
+     the two places that are meant to hit hard: the bottleneck panels and the
+     per-area bars. A blood red on a "required field" message would read as
+     punishment; here it is the point. */
+  --color-alerta: #d0021b;
+  --color-alerta-dim: #a80217;
+  --color-exito: #14c25a;
+  --color-exito-dim: #0f9a46;
+  --color-naranja: #f97316;
+
   /* Amber as a SURFACE, not as an action.
      Solid amber already means three things in this product — button, selected
      option, progress fill — so a tinted amber panel reads as clickable unless it
@@ -169,9 +181,44 @@
     pointer-events: none;
     position: fixed;
     inset: 0;
-    z-index: 50;
+    /* Behind content, not above it. At z-50 this sat over the sticky navbar and
+       every card; the texture has to be part of the surface, not a film on the
+       glass. */
+    z-index: 0;
     opacity: 0.022;
     background-image: url("/brand/grain.svg");
+  }
+
+  /* ── Page texture ──
+     Fixed behind everything: film grain for warmth plus a wide, very faint
+     diagonal hatch for structure, and two barely-there amber washes so the
+     paper isn't one flat tone edge to edge. All three are dust/amber at low
+     single-digit opacity — the brief was "sobrio pero con vida", so this reads
+     as paper stock rather than as decoration. Masked at the horizon so it never
+     competes with the content sitting on top of it. */
+  .ds-textura {
+    pointer-events: none;
+    position: fixed;
+    inset: 0;
+    z-index: 0;
+    background-image:
+      repeating-linear-gradient(
+        45deg,
+        rgba(200, 134, 10, 0.045) 0,
+        rgba(200, 134, 10, 0.045) 1px,
+        transparent 1px,
+        transparent 26px
+      ),
+      radial-gradient(
+        ellipse 60% 45% at 15% 0%,
+        rgba(200, 134, 10, 0.07) 0%,
+        transparent 70%
+      ),
+      radial-gradient(
+        ellipse 55% 40% at 90% 100%,
+        rgba(122, 117, 112, 0.06) 0%,
+        transparent 70%
+      );
   }
 
   /* ── Amber halo — the only soft-light element the brand allows. ── */
@@ -196,6 +243,8 @@
     border: none;
     border-radius: var(--radius-btn);
     cursor: pointer;
+    /* Same double-tap-to-zoom guard as .ds-input — see the comment there. */
+    touch-action: manipulation;
     white-space: nowrap;
     font-family: var(--font-display);
     font-weight: 700;
@@ -273,12 +322,41 @@
     font-family: var(--font-body);
     font-size: var(--text-base);
     padding: 0.8125rem 1rem;
+    /* Without this, iOS Safari treats a fast second tap on the same spot as
+       the start of a double-tap-to-zoom gesture and cancels the click instead
+       of firing it — exactly what happens when someone taps the custom
+       Dropdown trigger right after dismissing the keyboard from the field
+       above it (that dismiss tap and the "real" tap land close together in
+       time). `manipulation` tells the browser this element is never a zoom
+       target, so every tap resolves to an ordinary click immediately. */
+    touch-action: manipulation;
     transition:
       border-color 0.18s var(--ease-brand),
       box-shadow 0.18s var(--ease-brand);
   }
   .ds-input::placeholder {
     color: var(--color-stone);
+    opacity: 0.75;
+  }
+  /* iOS Safari keeps a dimmed system tint on a <select>'s own closed-box
+     text regardless of a plain `color` declaration — confirmed on-device,
+     not a specificity issue we can out-rank with a normal rule. Two things
+     are needed together: `-webkit-text-fill-color` is the property that
+     actually controls it there, not `color`; and it has to win over
+     Safari's internal form-control styling, which only `!important` does
+     reliably (a transparent-overlay trick was tried instead and made the
+     whole field disappear — Safari has a separate, documented bug where
+     `-webkit-text-fill-color: transparent` combined with the flex layout a
+     <select> renders internally can blank out the entire control, not just
+     hide its text). Never set `-webkit-text-fill-color` to `transparent` on
+     a <select> for this reason. */
+  select.ds-input {
+    color: var(--color-ink) !important;
+    -webkit-text-fill-color: var(--color-ink) !important;
+  }
+  select.ds-input.ds-select-empty {
+    color: var(--color-stone) !important;
+    -webkit-text-fill-color: var(--color-stone) !important;
     opacity: 0.75;
   }
   .ds-input:focus {
@@ -336,9 +414,19 @@
     opacity: 0;
     transform: translateY(18px);
   }
+  /* `transform: none`, not `translateY(0)` — any non-`none` transform value,
+     even one that's visually a no-op, makes the element a containing block
+     for any `position: fixed` descendant for as long as `animation-fill-mode:
+     both` keeps this end state applied (i.e. forever after the animation
+     finishes). The Dropdown's bottom-sheet overlay is `fixed inset-0`
+     expecting to cover the full viewport, but nests inside a `.ds-animate-up`
+     wrapper on the gatekeeping form — with `translateY(0)` here, the overlay
+     was clipped to that wrapper's own box instead of the screen. `.ds-reveal`
+     below already ends its equivalent animation at `transform: none` for the
+     same reason; this brings `ds-up` in line with it. */
   to {
     opacity: 1;
-    transform: translateY(0);
+    transform: none;
   }
 }
 
@@ -485,6 +573,23 @@
 }
 .ds-float {
   animation: ds-float 9s ease-in-out infinite;
+}
+
+/* Voice-input level bars — the "listening" tell on DictateButton, standing
+   in for a real audio-level readout (the Web Speech API gives no access to
+   the actual input level, so this is a rhythmic loop, not a live analysis). */
+@keyframes ds-voice-bar {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+.ds-voice-bar {
+  animation: ds-voice-bar 0.9s ease-in-out infinite;
+  transform-origin: center;
 }
 
 @media (prefers-reduced-motion: reduce) {

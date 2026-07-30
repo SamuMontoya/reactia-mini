@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Bricolage_Grotesque, DM_Sans } from "next/font/google";
 import Script from "next/script";
+import { TOTAL_PREGUNTAS } from "@/content/diagnostico-config";
 import "./globals.css";
 
 // Kreanding's two families. Both are variable fonts, so no `weight` is needed
@@ -23,12 +24,12 @@ export const metadata: Metadata = {
     template: "%s · Reactia Mini",
   },
   description:
-    "Responde 11 preguntas y descubre en 10 minutos qué está frenando el crecimiento de tu negocio. Gratis.",
+    `Responde ${TOTAL_PREGUNTAS} preguntas y descubre en 10 minutos qué está frenando el crecimiento de tu negocio. Gratis.`,
   applicationName: "Reactia Mini",
   openGraph: {
     title: "Reactia Mini — Escáner de Crecimiento",
     description:
-      "Responde 11 preguntas y descubre en 10 minutos qué está frenando el crecimiento de tu negocio. Gratis.",
+      `Responde ${TOTAL_PREGUNTAS} preguntas y descubre en 10 minutos qué está frenando el crecimiento de tu negocio. Gratis.`,
     locale: "es_CO",
     type: "website",
   },

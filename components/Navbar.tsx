@@ -49,10 +49,16 @@ export default function Navbar() {
           <Image
             src="/brand/logo.svg"
             alt=""
-            width={28}
-            height={30}
+            // Intrinsic size kept above the rendered height so Next still
+            // serves a sharp asset rather than upscaling a smaller one.
+            // Rendered size dialed back from h-9/h-10: at that size the mark
+            // read taller than the "Kreanding" wordmark's cap height right
+            // next to it, so the pair looked mismatched instead of like one
+            // lockup.
+            width={38}
+            height={40}
             priority
-            className="h-7 w-auto"
+            className="h-7 w-auto sm:h-8"
           />
           <span className="font-display text-xl font-semibold tracking-tight text-ink">
             Kreanding

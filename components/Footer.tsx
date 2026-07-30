@@ -13,7 +13,12 @@ export default function Footer() {
     // attention, and where it follows the result page's ink CTA the two merge
     // into one closing block. The hairline is white here, not dust, so it still
     // separates them.
-    <footer className="mt-auto border-t border-white/10 bg-ink">
+    // `relative` is load-bearing, not cosmetic: the page texture is a fixed
+    // layer at z-index 0, and a positioned element always paints above a static
+    // one — so as a static footer this had the amber hatch rendering on top of
+    // its ink surface. Being positioned puts it in the same stacking level as
+    // the texture, where DOM order wins and the footer covers it.
+    <footer className="relative mt-auto border-t border-white/10 bg-ink">
       <div className="ds-container flex flex-col items-center gap-3 py-6 sm:flex-row sm:justify-between">
         <div className="flex items-center gap-2.5">
           <Image

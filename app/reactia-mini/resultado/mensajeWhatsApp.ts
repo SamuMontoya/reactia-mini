@@ -3,7 +3,10 @@ import type { StoredLead } from '@/lib/storage/leadStorage';
 import type { Area } from './scoreScale';
 
 type Args = {
-  lead: StoredLead | null;
+  // `undefined` covers useLead()'s brief "still checking localStorage"
+  // state — treated the same as `null` here, since the message just omits
+  // the name either way.
+  lead: StoredLead | null | undefined;
   cuelloBotella: Area;
   score: number;
   resultadoId: string;

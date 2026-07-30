@@ -14,23 +14,23 @@ type ContactoPopupProps = {
   resultadoId: string;
 };
 
-/** How long to wait after the reader reaches the bottom before inviting them. */
+/** Fixed wait after the result page opens, not after any scroll gesture. */
 const DELAY_MS = 30_000;
-/** How close to the end counts as "reached it". */
-const BOTTOM_MARGIN_PX = 120;
 
-const sessionKey = (resultadoId: string) => `reactia_contacto_visto:${resultadoId}`;
+const vistoKey = (resultadoId: string) => `reactia_contacto_visto:${resultadoId}`;
 
 /**
- * Invitation to talk, shown once the reader has actually finished the page.
+ * Invitation to talk, shown once per visit to this result.
  *
- * The trigger is deliberate: reaching the bottom means they read it, and the
- * 30-second wait after that means they sat with it rather than bouncing. Firing
- * on a timer alone, or immediately on scroll, would interrupt someone still
- * reading — which is how these end up dismissed on reflex.
+ * Fires on a plain 30-second timer from the moment the page opens — no
+ * longer gated on scrolling to the bottom first, so it shows up on every
+ * visit rather than only for readers who scroll all the way down.
  *
- * Shown at most once per result per session (sessionStorage), and never when no
- * WhatsApp number is configured, so it can't offer a dead link.
+ * "Per visit", not "ever": tracked in sessionStorage, not localStorage, so
+ * closing the tab/browser and coming back to the same result later shows it
+ * again — only re-opening or reloading *within* the same session is
+ * suppressed. Still never shown when no WhatsApp number is configured, so it
+ * can't offer a dead link.
  */
 export default function ContactoPopup({
   cuelloBotella,
@@ -40,16 +40,13 @@ export default function ContactoPopup({
   const lead = useLead();
   const [visible, setVisible] = useState(false);
 
-  const sentinelRef = useRef<HTMLDivElement>(null);
   const dialogRef = useRef<HTMLDivElement>(null);
   const closeRef = useRef<HTMLButtonElement>(null);
   const previouslyFocused = useRef<HTMLElement | null>(null);
-  const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const armed = useRef(false);
 
   const yaVisto = useCallback(() => {
     try {
-      return sessionStorage.getItem(sessionKey(resultadoId)) === '1';
+      return sessionStorage.getItem(vistoKey(resultadoId)) === '1';
     } catch {
       return false;
     }
@@ -57,48 +54,24 @@ export default function ContactoPopup({
 
   const marcarVisto = useCallback(() => {
     try {
-      sessionStorage.setItem(sessionKey(resultadoId), '1');
+      sessionStorage.setItem(vistoKey(resultadoId), '1');
     } catch {
       // sessionStorage no disponible: se mostrará de nuevo, no es grave.
     }
   }, [resultadoId]);
 
-  /* ── Arm when the end of the page comes into view, then wait ── */
+  /* ── Wait a fixed 30s from mount, then show once ── */
   useEffect(() => {
     if (!isWhatsAppConfigured() || yaVisto()) return;
 
-    const sentinel = sentinelRef.current;
-    if (!sentinel) return;
+    const timer = setTimeout(() => {
+      if (yaVisto()) return;
+      setVisible(true);
+      marcarVisto();
+      trackEvent('contacto_popup_view');
+    }, DELAY_MS);
 
-    // An IntersectionObserver on a sentinel at the end of the content, rather
-    // than a scroll listener doing the arithmetic. It doesn't care which element
-    // actually scrolls, it still fires when the content is short enough that the
-    // end is visible without scrolling, and it re-evaluates by itself when the
-    // page height changes — none of which a scroll handler gets right for free.
-    const observer = new IntersectionObserver(
-      (entries) => {
-        if (armed.current || !entries.some((entry) => entry.isIntersecting)) return;
-
-        armed.current = true;
-        observer.disconnect();
-        trackEvent('resultado_fin_alcanzado');
-
-        timer.current = setTimeout(() => {
-          if (yaVisto()) return;
-          setVisible(true);
-          marcarVisto();
-          trackEvent('contacto_popup_view');
-        }, DELAY_MS);
-      },
-      { rootMargin: `0px 0px ${BOTTOM_MARGIN_PX}px 0px` }
-    );
-
-    observer.observe(sentinel);
-
-    return () => {
-      observer.disconnect();
-      if (timer.current) clearTimeout(timer.current);
-    };
+    return () => clearTimeout(timer);
   }, [yaVisto, marcarVisto]);
 
   const cerrar = useCallback((motivo: string) => {
@@ -144,81 +117,99 @@ export default function ContactoPopup({
     return () => document.removeEventListener('keydown', onKeyDown);
   }, [visible, cerrar]);
 
-  // The sentinel is the last thing in the page flow, so it comes into view
-  // exactly when the reader reaches the end. It must render whether or not the
-  // dialog is open, otherwise there'd be nothing to observe.
-  const sentinel = <div ref={sentinelRef} aria-hidden className="h-px w-full" />;
-
-  if (!visible) return sentinel;
+  if (!visible) return null;
 
   const mensaje = buildMensajeDiagnostico({ lead, cuelloBotella, score, resultadoId });
 
   return (
-    <>
-      {sentinel}
       <div className="fixed inset-0 z-50 flex items-end justify-center p-4 sm:items-center">
-      <button
-        type="button"
-        aria-label="Cerrar"
-        tabIndex={-1}
-        onClick={() => cerrar('backdrop')}
-        className="absolute inset-0 cursor-default bg-ink/25 backdrop-blur-[2px]"
-      />
-
-      <div
-        ref={dialogRef}
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="contacto-popup-titulo"
-        className="ds-animate-up relative w-full max-w-md overflow-hidden rounded-[var(--radius-card)] border border-dust bg-gradient-to-br from-white via-white to-amber/[0.08] p-6 shadow-[var(--shadow-lg)] sm:p-7"
-      >
-        <span
-          aria-hidden
-          className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber/50 to-transparent"
+        <button
+          type="button"
+          aria-label="Cerrar"
+          tabIndex={-1}
+          onClick={() => cerrar('backdrop')}
+          className="absolute inset-0 cursor-default bg-ink/40 backdrop-blur-sm"
         />
 
-        <button
-          ref={closeRef}
-          type="button"
-          onClick={() => cerrar('boton_x')}
-          aria-label="Cerrar"
-          className="absolute right-3 top-3 flex h-9 w-9 items-center justify-center rounded-full text-stone transition-colors hover:bg-paper-warm hover:text-ink"
+        {/* Bigger than the old modal (max-w-lg, more padding) and dark rather
+            than a paper-tinted card — the same register the closing CTA and
+            "generando" use for their big moments, so this reads as the funnel's
+            other high-stakes screen rather than a small dismissible toast. */}
+        <div
+          ref={dialogRef}
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="contacto-popup-titulo"
+          className="ds-animate-up relative w-full max-w-lg overflow-hidden rounded-[var(--radius-card)] border border-white/10 bg-ink p-7 text-center shadow-[0_28px_64px_rgba(0,0,0,0.45)] sm:p-10"
         >
-          <Close className="h-5 w-5" />
-        </button>
+          {/* Drifting amber halo, same treatment as CtaFinal/generando. */}
+          <div
+            aria-hidden
+            className="ds-float pointer-events-none absolute left-1/2 top-0 h-80 w-80 -translate-x-1/2 -translate-y-1/3 rounded-full"
+            style={{
+              background:
+                'radial-gradient(circle, rgba(200,134,10,.28) 0%, rgba(200,134,10,.06) 45%, transparent 72%)',
+            }}
+          />
 
-        <p className="ds-eyebrow">Ya viste tu diagnóstico</p>
+          <button
+            ref={closeRef}
+            type="button"
+            onClick={() => cerrar('boton_x')}
+            aria-label="Cerrar"
+            className="absolute right-3 top-3 z-10 flex h-9 w-9 items-center justify-center rounded-full text-dust transition-colors hover:bg-white/10 hover:text-white"
+          >
+            <Close className="h-5 w-5" />
+          </button>
 
-        <h2
-          id="contacto-popup-titulo"
-          className="mt-3 font-display text-2xl font-bold leading-tight text-ink"
-        >
-          ¿Quieres que te ayudemos con{' '}
-          <span className="text-amber">{AREA_LABELS[cuelloBotella]}</span>?
-        </h2>
+          {/* Big WhatsApp badge — an icon this size is what makes the modal
+              read as "grande y atractivo" rather than a resized version of the
+              old card; everything below is built around it. */}
+          <span className="relative mx-auto flex h-20 w-20 items-center justify-center rounded-full bg-amber/15 text-amber ring-1 ring-amber/30">
+            <WhatsApp className="h-10 w-10" />
+          </span>
 
-        <p className="mt-2.5 text-base text-stone">
-          Escríbenos por WhatsApp. Ya tenemos tu diagnóstico a mano, así que no vas a
-          tener que repetir nada.
-        </p>
+          <p className="relative mt-5 text-xs font-medium uppercase tracking-[0.2em] text-amber">
+            Ya viste tu diagnóstico
+          </p>
 
-        {/* One action only. A "no thanks" button gives the reflex-dismisser a
-            target and adds nothing — the X and the backdrop already close it. */}
-        <a
-          href={buildWhatsAppUrl(mensaje)}
-          target="_blank"
-          rel="noopener noreferrer"
-          onClick={() => {
-            trackEvent('cta_experto_click', { canal: 'whatsapp', origen: 'popup' });
-            setVisible(false);
-          }}
-          className="ds-btn ds-btn-amber ds-btn-lg mt-6 w-full"
-        >
-          <WhatsApp className="h-5 w-5" />
-          Escribirnos por WhatsApp
-        </a>
+          <h2
+            id="contacto-popup-titulo"
+            className="relative mt-3 font-display text-3xl font-extrabold leading-tight tracking-tight text-white sm:text-4xl"
+          >
+            ¿Quieres que te ayudemos con{' '}
+            <span className="text-amber">{AREA_LABELS[cuelloBotella]}</span>?
+          </h2>
+
+          <p className="relative mx-auto mt-3 max-w-sm text-lg text-dust">
+            Escríbenos por WhatsApp. Ya tenemos tu diagnóstico a mano, así que no vas a
+            tener que repetir nada.
+          </p>
+
+          {/* One action only. A "no thanks" button gives the reflex-dismisser a
+              target and adds nothing — the X and the backdrop already close it.
+              Same shiny, pulsing treatment as the closing CTA and the landing's
+              hero button: rounded-full, ds-shine's light sweep, ds-pulse's
+              expanding ring — the eye should land here without a second look
+              anywhere else on the screen. */}
+          <a
+            href={buildWhatsAppUrl(mensaje)}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={() => {
+              trackEvent('cta_experto_click', { canal: 'whatsapp', origen: 'popup' });
+              setVisible(false);
+            }}
+            className="ds-shine ds-pulse relative mt-7 inline-flex w-full items-center justify-center gap-3 overflow-hidden rounded-full bg-amber px-8 py-5 font-display text-lg font-extrabold tracking-tight text-white transition-transform duration-200 ease-[var(--ease-brand)] hover:scale-[1.03] hover:bg-amber-dim active:scale-100 sm:text-xl"
+          >
+            <WhatsApp className="h-6 w-6 shrink-0" />
+            Escribirnos por WhatsApp
+          </a>
+
+          <p className="relative mt-4 text-sm text-stone">
+            Te respondemos en el mismo chat. No cuesta nada escribir.
+          </p>
         </div>
       </div>
-    </>
   );
 }

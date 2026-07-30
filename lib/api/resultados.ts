@@ -33,5 +33,12 @@ export const saveResultado = async (
 
   if (error) throw new Error(error.message);
 
+  const { error: deviceDiagError } = await supabase
+    .from('device_diagnostics')
+    .update({ resultado_id: resultado.id })
+    .eq('diagnostico_id', diagnosticoId);
+
+  if (deviceDiagError) throw new Error(deviceDiagError.message);
+
   return { resultadoId: resultado.id };
 };

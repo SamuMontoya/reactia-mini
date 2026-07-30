@@ -10,6 +10,7 @@
  */
 
 import { Compass, Sparkles, WhatsApp } from '@/components/icons';
+import { TOTAL_PREGUNTAS } from '@/content/diagnostico-config';
 import React from 'react';
 
 type HowItWorksStep = {
@@ -49,12 +50,12 @@ export const landingCopy: LandingCopy = {
     despues: '.',
   },
   subheadline:
-    'Responde 11 preguntas sobre tu negocio y recibe al instante un diagnóstico que te dice qué te está frenando y qué hacer primero.',
+    `Responde ${TOTAL_PREGUNTAS} preguntas sobre tu negocio y recibe al instante un diagnóstico que te dice qué te está frenando y qué hacer primero.`,
   gratis: {
-    palabra: 'Gratis',
+    palabra: '¡Gratis!',
     apoyo: 'Sin tarjeta, sin llamadas, sin compromiso.',
   },
-  reassurances: ['11 preguntas', '10 minutos', 'Resultado al instante'],
+  reassurances: [`${TOTAL_PREGUNTAS} preguntas`, '10 minutos', 'Resultado al instante'],
   cta: 'Empezar mi diagnóstico',
   ctaNota: 'Es una versión corta del diagnóstico que hacemos con nuestros clientes.',
   howItWorksTitulo: 'Cómo funciona',
@@ -68,7 +69,7 @@ export const landingCopy: LandingCopy = {
       icon: <Compass className="h-6 w-6" />,
     },
     {
-      titulo: 'Responde 11 preguntas',
+      titulo: `Responde ${TOTAL_PREGUNTAS} preguntas`,
       descripcion:
         'Una por pantalla. Se guardan solas, así que puedes salir y volver donde quedaste.',
       icon: <Sparkles className="h-6 w-6" />,

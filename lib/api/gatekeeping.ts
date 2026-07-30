@@ -7,7 +7,7 @@ export const UMBRAL_FACTURACION_COP = 5_000_000;
 /** Years operating at or above this qualifies. Below it, `califica` is false. */
 export const MINIMO_ANIOS_OPERACION = 1;
 
-export const submitGatekeeping = async (data: Gatekeeping) => {
+export const submitGatekeeping = async (data: Gatekeeping, deviceId?: string) => {
   const validData = gatekeepingSchema.parse(data);
 
   // Derived here, not sent by the client: the form only offers bands, so the
@@ -34,11 +34,12 @@ export const submitGatekeeping = async (data: Gatekeeping) => {
       whatsapp: validData.whatsapp,
       califica,
       estado: califica ? 'calificado_pendiente' : 'no_calificado',
+      device_id: deviceId ?? null,
     })
     .select('id')
     .single();
 
   if (error) throw new Error(error.message);
 
-  return { leadId: lead.id, califica };
+  return { leadId: lead.id, califica, deviceId: deviceId ?? null };
 };

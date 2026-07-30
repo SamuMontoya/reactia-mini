@@ -7,10 +7,22 @@ import { diagnosticoSchema, type Diagnostico } from '@/lib/schemas';
 import { diagnosticoConfig, TOTAL_PREGUNTAS } from '@/content/diagnostico-config';
 import { trackEvent } from '@/lib/analytics/trackEvent';
 import { useLead } from '@/lib/hooks/useLead';
+import { useDeviceId } from '@/lib/hooks/useDeviceId';
 import { getErrorMessage } from '@/lib/getErrorMessage';
-import { clearDraft, getDraft, saveDraft } from '@/lib/storage/diagnosticoDraft';
+import { postJson } from '@/lib/api/clientFetch';
+import {
+  clearDraft,
+  draftEstaCompleto,
+  draftTieneRespuestas,
+  getDraft,
+  pasoDesdeDraft,
+  saveDraft,
+  type DiagnosticoDraft,
+} from '@/lib/storage/diagnosticoDraft';
+import Spinner from '@/components/ui/Spinner';
 import QuestionRenderer from './QuestionRenderer';
 import ResumenPaso from './ResumenPaso';
+import DraftResumeModal from './DraftResumeModal';
 import { ArrowLeft, ArrowRight, Check } from '@/components/icons';
 
 /** A question step, or the review screen that follows the last question. */
@@ -21,6 +33,7 @@ const RESUMEN: Paso = { tipo: 'resumen' };
 export default function DiagnosticoPage() {
   const router = useRouter();
   const lead = useLead();
+  const deviceId = useDeviceId();
 
   const [paso, setPaso] = useState<Paso>({ tipo: 'pregunta', index: 0 });
   // Set when the user jumped into a question from the review screen, so
@@ -32,6 +45,10 @@ export default function DiagnosticoPage() {
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [guardadoEn, setGuardadoEn] = useState<number | null>(null);
   const [draftCargado, setDraftCargado] = useState(false);
+  // Held here, not applied, until the reader picks "Continuar" or "Empezar de
+  // nuevo" in DraftResumeModal — see that component for why this asks instead
+  // of just reopening wherever the autosave left off.
+  const [draftPendiente, setDraftPendiente] = useState<DiagnosticoDraft | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -53,7 +70,13 @@ export default function DiagnosticoPage() {
   const values = useWatch({ control });
 
   useEffect(() => {
-    if (!lead) {
+    // `undefined` means useLead is still reading localStorage — not yet
+    // "confirmed absent". Redirecting on that transient value (rather than
+    // waiting for a real `null`) is what used to send someone with a
+    // perfectly valid saved lead back to the gatekeeping form on every cold
+    // reload, wiping out exactly the "keep going where I left off"
+    // experience this page's draft-resume flow exists to provide.
+    if (lead === null) {
       router.replace('/reactia-mini/gatekeeping');
     }
   }, [lead, router]);
@@ -62,27 +85,46 @@ export default function DiagnosticoPage() {
     trackEvent('diagnostico_iniciado');
   }, []);
 
-  /* ── Restore a saved draft, once, as soon as we know which lead this is ── */
+  /* ── Look for a saved draft, once, as soon as we know which lead this is.
+     A draft with actual answers in it is held in `draftPendiente` for
+     DraftResumeModal to ask about, rather than applied straight away — see
+     that component for why. An empty or missing draft just clears the way
+     for the wizard to start normally. ── */
   useEffect(() => {
     if (!lead || draftCargado) return;
 
     const draft = getDraft(lead.leadId);
-    if (draft) {
-      queueMicrotask(() => {
-        reset(draft.respuestas as Diagnostico, { keepDefaultValues: true });
-        const contestadas = Object.keys(draft.respuestas).length;
-        // Reopen on the saved step, but never past the end of the wizard.
-        setPaso(
-          contestadas >= TOTAL_PREGUNTAS
-            ? RESUMEN
-            : { tipo: 'pregunta', index: Math.min(draft.paso, TOTAL_PREGUNTAS - 1) }
-        );
-        setGuardadoEn(draft.guardadoEn || null);
-        trackEvent('diagnostico_borrador_recuperado', { paso: draft.paso });
-      });
+    if (draft && draftTieneRespuestas(draft)) {
+      setDraftPendiente(draft);
+    } else {
+      setDraftCargado(true);
     }
-    queueMicrotask(() => setDraftCargado(true));
-  }, [lead, draftCargado, reset]);
+  }, [lead, draftCargado]);
+
+  const continuarBorrador = useCallback(() => {
+    if (!draftPendiente) return;
+
+    reset(draftPendiente.respuestas as Diagnostico, { keepDefaultValues: true });
+    setPaso(
+      draftEstaCompleto(draftPendiente, TOTAL_PREGUNTAS)
+        ? RESUMEN
+        : { tipo: 'pregunta', index: pasoDesdeDraft(draftPendiente, TOTAL_PREGUNTAS) }
+    );
+    setGuardadoEn(draftPendiente.guardadoEn || null);
+    trackEvent('diagnostico_borrador_recuperado', { paso: draftPendiente.paso });
+    setDraftPendiente(null);
+    setDraftCargado(true);
+  }, [draftPendiente, reset]);
+
+  const empezarDeNuevo = useCallback(() => {
+    if (lead) clearDraft(lead.leadId);
+    reset({});
+    setPaso({ tipo: 'pregunta', index: 0 });
+    setGuardadoEn(null);
+    trackEvent('diagnostico_borrador_descartado');
+    setDraftPendiente(null);
+    setDraftCargado(true);
+  }, [lead, reset]);
 
   /* ── Autosave: persist on every answer change, debounced ── */
   const debounce = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -129,10 +171,10 @@ export default function DiagnosticoPage() {
       setSubmitError(null);
 
       try {
-        const response = await fetch('/api/mini/diagnostico/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ leadId: lead.leadId, respuestas: data }),
+        const response = await postJson('/api/mini/diagnostico/save', {
+          leadId: lead.leadId,
+          respuestas: data,
+          deviceId: deviceId,
         });
 
         if (!response.ok) {
@@ -228,6 +270,15 @@ export default function DiagnosticoPage() {
     setPaso({ tipo: 'pregunta', index });
   };
 
+  // A question that needed scrolling to answer leaves the page scrolled down;
+  // the next question then mounts at that same scroll position, so its title
+  // renders up under the sticky navbar instead of at the top of the screen.
+  // Every step change should read like a fresh screen, so it resets to the
+  // top instead of carrying the previous question's scroll position forward.
+  useEffect(() => {
+    window.scrollTo(0, 0);
+  }, [paso]);
+
   // Subscribe to the two fields that toggle a conditional text box, so the
   // renderer re-renders as soon as the trigger option is picked.
   const tipoNegocio = values.modelo_tipo_negocio;
@@ -241,7 +292,12 @@ export default function DiagnosticoPage() {
     return undefined;
   }, [paso, tipoNegocio, origenClientes]);
 
-  if (!lead) return null;
+  // The progress bar is structural chrome, not data — it only needs `paso`,
+  // which is set synchronously on mount, so it has no reason to wait on
+  // `lead` resolving or a draft decision. Blanking the whole page (`return
+  // null`) until both were ready used to make the bar itself flash in late;
+  // now only the question content beneath it waits, on its own spinner.
+  const listoParaResponder = !!lead && draftCargado && !draftPendiente;
 
   const enResumen = paso.tipo === 'resumen';
   const numeroPaso = enResumen ? TOTAL_PREGUNTAS : paso.index + 1;
@@ -315,7 +371,11 @@ export default function DiagnosticoPage() {
 
       {/* ── The question fills the screen instead of sitting in a narrow card ── */}
       <div className="ds-container flex flex-1 flex-col justify-center py-4 sm:py-6">
-        {enResumen ? (
+        {!listoParaResponder ? (
+          <div className="flex flex-1 items-center justify-center py-16">
+            <Spinner label="Abriendo tu diagnóstico..." />
+          </div>
+        ) : enResumen ? (
           <ResumenPaso
             values={getValues()}
             onEdit={handleEditFromResumen}
@@ -340,8 +400,12 @@ export default function DiagnosticoPage() {
         )}
       </div>
 
+      {draftPendiente && (
+        <DraftResumeModal onContinuar={continuarBorrador} onEmpezarDeNuevo={empezarDeNuevo} />
+      )}
+
       {/* ── Navigation ── */}
-      {!enResumen && (
+      {listoParaResponder && !enResumen && (
         <div className="sticky bottom-0 bg-paper/90 backdrop-blur-md">
           <div className="ds-container flex items-center justify-between gap-4 py-4">
             <button

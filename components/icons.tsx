@@ -103,6 +103,45 @@ export function CircleCheck({
   );
 }
 
+/* ── Bare marks, for oversized background watermarks ──
+ * Just the stroke — no enclosing disc. The circular CircleX/CircleCheck read as
+ * a blob when blown up to watermark size behind a panel; a bare ✕ or ✓ keeps its
+ * silhouette at any scale. Butt-capped and heavy so they stay legible at 5%
+ * opacity, where a thin round-capped stroke disappears.
+ */
+export function MarkX({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3.5"
+      strokeLinecap="round"
+      aria-hidden
+      className={className}
+    >
+      <path d="M5 5l14 14M19 5L5 19" />
+    </svg>
+  );
+}
+
+export function MarkCheck({ className }: { className?: string }) {
+  return (
+    <svg
+      viewBox="0 0 24 24"
+      fill="none"
+      stroke="currentColor"
+      strokeWidth="3.5"
+      strokeLinecap="round"
+      strokeLinejoin="round"
+      aria-hidden
+      className={className}
+    >
+      <path d="M4 12.5l5.5 5.5L20 6" />
+    </svg>
+  );
+}
+
 export function Close({ className, strokeWidth = 1.75 }: IconProps) {
   return (
     <svg {...base(className)} strokeWidth={strokeWidth}>
@@ -219,6 +258,22 @@ export function Alert({ className, strokeWidth = 1.75 }: IconProps) {
 }
 
 /** AI sparkles — one large four-point star plus two small ones. */
+/**
+ * Decorative quotation mark, hand-drawn rather than a font glyph. A real
+ * typographic “ character sits high and thin in its em-box — fine at body
+ * size, but oversized as a background ghost-motif it clips to an odd fragment
+ * against `overflow-hidden`, since almost none of the glyph's own bounding box
+ * is inked. This fills its viewBox the way the rest of this file's icons do, so
+ * it scales predictably at any size.
+ */
+export function QuoteMark({ className }: { className?: string }) {
+  return (
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={className}>
+      <path d="M7.17 5.5C4.65 7.9 3.2 10.8 3.2 14.6c0 3.5 1.9 5.8 4.7 5.8 2.25 0 3.75-1.7 3.75-3.7 0-1.85-1.25-3.25-2.9-3.55-.1-2.25.9-4.3 2.35-5.9L7.17 5.5Zm10.6 0C15.25 7.9 13.8 10.8 13.8 14.6c0 3.5 1.9 5.8 4.7 5.8 2.25 0 3.75-1.7 3.75-3.7 0-1.85-1.25-3.25-2.9-3.55-.1-2.25.9-4.3 2.35-5.9l-3.93-1.75Z" />
+    </svg>
+  );
+}
+
 export function Sparkles({ className }: { className?: string }) {
   return (
     <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden className={className}>
@@ -234,6 +289,15 @@ export function Compass({ className, strokeWidth = 1.75 }: IconProps) {
     <svg {...base(className)} strokeWidth={strokeWidth}>
       <circle cx="12" cy="12" r="8.5" />
       <path d="M15.2 8.8l-1.7 4.7-4.7 1.7 1.7-4.7 4.7-1.7z" />
+    </svg>
+  );
+}
+
+export function Mic({ className, strokeWidth = 1.75 }: IconProps) {
+  return (
+    <svg {...base(className)} strokeWidth={strokeWidth}>
+      <rect x="9" y="2" width="6" height="12" rx="3" />
+      <path d="M5 10v1a7 7 0 0 0 14 0v-1M12 18v4M9 22h6" />
     </svg>
   );
 }

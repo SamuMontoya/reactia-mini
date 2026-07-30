@@ -1,14 +1,59 @@
 'use client';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { landingCopy } from '@/content/landing-copy';
 import { trackEvent } from '@/lib/analytics/trackEvent';
+import { useDeviceId } from '@/lib/hooks/useDeviceId';
+import { useDiagnosticHistory } from '@/lib/hooks/useDiagnosticHistory';
+import { useLead } from '@/lib/hooks/useLead';
+import { draftTieneRespuestas, getDraft } from '@/lib/storage/diagnosticoDraft';
+import { DiagnosticHistory, type DraftPendienteInfo } from '@/components/DiagnosticHistory';
+import Reveal from '@/components/ui/Reveal';
 import { ArrowRight, Check, Clock } from '@/components/icons';
 
 export default function ReactiaMiniLandingPage() {
+  const deviceId = useDeviceId();
+  const lead = useLead();
+  // Not gated on isLoading: while the history fetch is in flight (or fails —
+  // a flaky tunnel, a slow network) diagnosticos is still its initial [],
+  // so hasHistory is false and the "cómo funciona" steps render by default.
+  // The moment real history arrives this flips to the history grid. That
+  // default-to-steps behaviour is deliberate — a stuck or errored fetch
+  // should never be able to leave the visitor looking at a loading skeleton
+  // that never resolves.
+  const { diagnosticos } = useDiagnosticHistory(deviceId);
+
+  // A diagnóstico still sitting only in localStorage — started, autosaved at
+  // least once, never submitted. Read once the current lead resolves rather
+  // than through a subscription: nothing else on this page changes it, and
+  // it's the same lead the whole time this page is open.
+  const [draftInfo, setDraftInfo] = useState<DraftPendienteInfo | null>(null);
+
   useEffect(() => {
-    trackEvent('landing_view');
-  }, []);
+    if (!lead) {
+      setDraftInfo(null);
+      return;
+    }
+    const draft = getDraft(lead.leadId);
+    setDraftInfo(
+      draft && draftTieneRespuestas(draft)
+        ? {
+            leadId: lead.leadId,
+            nombre: lead.nombre,
+            empresa: lead.empresa,
+            guardadoEn: draft.guardadoEn,
+          }
+        : null
+    );
+  }, [lead]);
+
+  const hasHistory = diagnosticos.length > 0 || !!draftInfo;
+
+  useEffect(() => {
+    if (deviceId) {
+      trackEvent('landing_view_with_device', { deviceId });
+    }
+  }, [deviceId]);
 
   return (
     <div className="flex h-full flex-1 flex-col">
@@ -113,16 +158,25 @@ export default function ReactiaMiniLandingPage() {
                 </span>
               </span>
 
+              {/* One CTA on this page, and its wording adapts. A returning
+                  visitor with history isn't "empezando" anything, and having a
+                  second button further down that said "Hacer nuevo diagnóstico"
+                  made the two read as different actions when they go to the same
+                  place — so that button is gone and this label carries it. */}
               <Link
                 href="/reactia-mini/gatekeeping"
-                onClick={() => trackEvent('cta_iniciar_click')}
+                onClick={() =>
+                  trackEvent(
+                    hasHistory ? 'cta_nuevo_diagnostico_click' : 'cta_iniciar_click'
+                  )
+                }
                 // Same treatment as the closing CTA on the result page: pulse
                 // ring plus the light sweep. `relative overflow-hidden` is
                 // required by ds-shine — its sweep is an ::after that has to be
                 // clipped to the button.
                 className="ds-btn ds-btn-amber ds-btn-lg ds-shine ds-pulse relative w-full overflow-hidden lg:w-auto"
               >
-                {landingCopy.cta}
+                {hasHistory ? 'Hacer nuevo diagnóstico' : landingCopy.cta}
                 <ArrowRight className="h-5 w-5" />
               </Link>
 
@@ -140,71 +194,73 @@ export default function ReactiaMiniLandingPage() {
         />
       </section>
 
-      {/* ══ Cómo funciona — centered in remaining viewport ══ */}
+      {/* ══ Historial de diagnósticos / Cómo funciona — centered in remaining viewport ══ */}
       <section
-        className="ds-container ds-animate-up flex-1 flex items-center justify-center px-5 py-6"
-        style={{ animationDelay: '0.4s' }}
-        aria-label="Cómo funciona"
+        className="ds-container flex-1 flex items-center justify-center px-5 py-6"
+        aria-label={hasHistory ? 'Tu historial de diagnósticos' : 'Cómo funciona'}
       >
         <div className="w-full max-w-[72rem]">
-          <div
-            className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
-            role="list"
-            aria-label="Pasos del diagnóstico"
-          >
-            {landingCopy.howItWorks.map((step, index) => (
-              <article
-                key={step.titulo}
-                className="group relative overflow-hidden rounded-[var(--radius-card)] bg-white p-5 shadow-[var(--shadow-sm)] transition-all duration-500 ease-[var(--ease-brand)] hover:-translate-y-1 hover:shadow-[var(--shadow-lg)] flex flex-col"
-                style={{ transitionDelay: `${0.24 + index * 0.08}s` }}
-              >
-                {/* Amber top accent line — brand's signature */}
-                <span
-                  aria-hidden
-                  className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                />
+          {hasHistory ? (
+            <DiagnosticHistory diagnosticos={diagnosticos} draft={draftInfo} />
+          ) : (
+            <div
+              className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3"
+              role="list"
+              aria-label="Pasos del diagnóstico"
+            >
+              {landingCopy.howItWorks.map((step, index) => (
+                <Reveal key={step.titulo} delay={index * 90} className="h-full">
+                  <article className="group relative flex h-full flex-col overflow-hidden rounded-[var(--radius-card)] bg-white p-5 shadow-[var(--shadow-sm)] transition-all duration-500 ease-[var(--ease-brand)] hover:-translate-y-1 hover:shadow-[var(--shadow-lg)]">
+                    {/* Amber top accent line — brand's signature */}
+                    <span
+                      aria-hidden
+                      className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-amber to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                    />
 
-                {/* Ghost number — decorative background element, bottom right */}
-                <span
-                  aria-hidden
-                  className="pointer-events-none absolute right-4 bottom-2 select-none font-display text-8xl font-extrabold leading-none text-dust/15 group-hover:text-amber/25 transition-colors duration-500 -z-10"
-                >
-                  {index + 1}
-                </span>
-
-                {/* Step badge with amber accent - top right */}
-                <span className="ds-label absolute right-4 top-4 px-3 py-1 rounded-full bg-amber/10 text-amber font-semibold">
-                  Paso {index + 1}
-                </span>
-
-                {/* Icon container with amber halo effect */}
-                <div className="relative mt-2 flex h-12 w-12 items-center justify-center rounded-xl bg-white border border-dust transition-all duration-300 group-hover:border-amber/50 group-hover:shadow-[0_0_0_4px_rgba(200,134,10,0.15)]">
-                  <span
-                    aria-hidden
-                    className="pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-br from-amber/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
-                  />
-                  {step.icon && (
-                    <span className="relative text-2xl text-ink group-hover:text-amber transition-colors duration-300">
-                      {step.icon}
+                    {/* Ghost number — decorative background element, bottom right */}
+                    <span
+                      aria-hidden
+                      className="pointer-events-none absolute right-4 bottom-2 select-none font-display text-8xl font-extrabold leading-none text-dust/15 group-hover:text-amber/25 transition-colors duration-500 -z-10"
+                    >
+                      {index + 1}
                     </span>
-                  )}
-                </div>
 
-                <h3 className="relative mt-3 font-display text-lg font-bold text-ink group-hover:text-amber transition-colors duration-300">
-                  {step.titulo}
-                </h3>
-                <p className="relative mt-1.5 text-sm text-stone leading-relaxed flex-1">
-                  {step.descripcion}
-                </p>
+                    {/* Step badge with amber accent - top right */}
+                    <span className="ds-label absolute right-4 top-4 px-3 py-1 rounded-full bg-amber/10 text-amber font-semibold">
+                      Paso {index + 1}
+                    </span>
 
-                {/* Subtle bottom accent on hover */}
-                <span
-                  aria-hidden
-                  className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-amber to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-center"
-                />
-              </article>
-            ))}
-          </div>
+                    {/* Icon container with amber halo effect */}
+                    <div className="relative mt-2 flex h-12 w-12 items-center justify-center rounded-xl bg-white border border-dust transition-all duration-300 group-hover:border-amber/50 group-hover:shadow-[0_0_0_4px_rgba(200,134,10,0.15)]">
+                      <span
+                        aria-hidden
+                        className="pointer-events-none absolute inset-0 rounded-xl bg-gradient-to-br from-amber/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300"
+                      />
+                      {step.icon && (
+                        <span className="relative text-2xl text-ink group-hover:text-amber transition-colors duration-300">
+                          {step.icon}
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="relative mt-3 font-display text-lg font-bold text-ink group-hover:text-amber transition-colors duration-300">
+                      {step.titulo}
+                    </h3>
+                    <p className="relative mt-1.5 text-sm text-stone leading-relaxed flex-1">
+                      {step.descripcion}
+                    </p>
+
+                    {/* Subtle bottom accent on hover */}
+                    <span
+                      aria-hidden
+                      className="absolute inset-x-0 bottom-0 h-px bg-gradient-to-r from-transparent via-amber to-transparent scale-x-0 group-hover:scale-x-100 transition-transform duration-500 origin-center"
+                    />
+                  </article>
+                </Reveal>
+              ))}
+            </div>
+          )}
+
         </div>
       </section>
     </div>

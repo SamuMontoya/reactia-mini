@@ -63,3 +63,22 @@ export const clearDraft = (leadId: string): void => {
     // Nada que limpiar si localStorage no está disponible.
   }
 };
+
+/** A draft only matters if it actually has an answer in it — an empty one
+ *  (e.g. left over from a visit that never got past the first question)
+ *  shouldn't trigger a "seguir donde quedaste" prompt. */
+export const draftTieneRespuestas = (draft: DiagnosticoDraft): boolean =>
+  Object.keys(draft.respuestas).length > 0;
+
+/** Whether every question has an answer, i.e. the draft belongs on the
+ *  review screen rather than back on a specific question. */
+export const draftEstaCompleto = (
+  draft: DiagnosticoDraft,
+  totalPreguntas: number
+): boolean => Object.keys(draft.respuestas).length >= totalPreguntas;
+
+/** Which question index to reopen on — the saved step, clamped so a draft
+ *  saved against a longer version of the wizard can't point past the end
+ *  of the current one. */
+export const pasoDesdeDraft = (draft: DiagnosticoDraft, totalPreguntas: number): number =>
+  Math.min(Math.max(draft.paso, 0), totalPreguntas - 1);

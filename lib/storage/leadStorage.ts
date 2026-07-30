@@ -2,6 +2,7 @@ const STORAGE_KEY = 'reactia_lead';
 
 export type StoredLead = {
   leadId: string;
+  deviceId: string;
   nombre: string;
   empresa: string;
   whatsapp: string;
@@ -48,8 +49,11 @@ export const getLead = (): StoredLead | null => {
 
     // `empresa` se agregó después del lanzamiento — un lead guardado por la
     // versión anterior no la tiene, y eso no debe romper el flujo.
+    // `deviceId` se agregó posteriormente — un lead guardado por versión
+    // anterior no lo tiene.
     cachedLead = {
       leadId: parsed.leadId,
+      deviceId: parsed.deviceId ?? '',
       nombre: parsed.nombre ?? '',
       empresa: parsed.empresa ?? '',
       whatsapp: parsed.whatsapp ?? '',

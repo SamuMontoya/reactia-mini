@@ -5,9 +5,9 @@ import { getErrorMessage } from '@/lib/getErrorMessage';
 export async function POST(req: NextRequest) {
   try {
     const body = await req.json();
-    const { leadId, respuestas } = body;
+    const { leadId, respuestas, deviceId } = body;
 
-    const result = await saveDiagnostico(leadId, respuestas);
+    const result = await saveDiagnostico(leadId, respuestas, deviceId);
 
     return NextResponse.json(result, { status: 201 });
   } catch (error) {

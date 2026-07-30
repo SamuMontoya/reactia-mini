@@ -5,6 +5,7 @@ import { trackEvent } from '@/lib/analytics/trackEvent';
 import { useLead } from '@/lib/hooks/useLead';
 import { supabase } from '@/lib/supabase';
 import { getErrorMessage } from '@/lib/getErrorMessage';
+import { postJson } from '@/lib/api/clientFetch';
 import Spinner from '@/components/ui/Spinner';
 import type { Diagnostico } from '@/lib/schemas';
 
@@ -49,9 +50,16 @@ function GenerandoContent() {
   useEffect(() => {
     if (diagnostico) return;
 
-    if (!diagnosticoIdParam && !lead) {
-      router.replace('/reactia-mini/gatekeeping');
-      return;
+    if (!diagnosticoIdParam) {
+      // `lead` is `undefined` while useLead's mount effect is still reading
+      // localStorage — not yet "confirmed absent". Redirecting on that
+      // transient value is what used to send someone with a perfectly valid
+      // lead back to the gatekeeping form on every cold page load.
+      if (lead === undefined) return;
+      if (lead === null) {
+        router.replace('/reactia-mini/gatekeeping');
+        return;
+      }
     }
 
     let cancelled = false;
@@ -101,13 +109,9 @@ function GenerandoContent() {
 
     const generarResultado = async () => {
       try {
-        const response = await fetch('/api/mini/resultado/save', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            diagnosticoId: diagnostico.id,
-            respuestas: diagnostico.respuestas,
-          }),
+        const response = await postJson('/api/mini/resultado/save', {
+          diagnosticoId: diagnostico.id,
+          respuestas: diagnostico.respuestas,
         });
 
         if (!response.ok) {
