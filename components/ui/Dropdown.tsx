@@ -64,7 +64,12 @@ export default function Dropdown({
   name,
 }: DropdownProps) {
   const [open, setOpen] = useState(false);
+  // Whether the option list itself has more content below its own scroll
+  // viewport — the page's ScrollHint only watches `document.documentElement`,
+  // so it has no idea this nested, independently-scrolling sheet exists.
+  const [canScrollMore, setCanScrollMore] = useState(false);
   const firstOptionRef = useRef<HTMLButtonElement>(null);
+  const sheetRef = useRef<HTMLDivElement>(null);
 
   const selected = options.find((option) => option.value === value);
 
@@ -87,6 +92,28 @@ export default function Dropdown({
     return () => document.removeEventListener('keydown', onKeyDown);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open]);
+
+  useEffect(() => {
+    if (!open) return;
+    const sheet = sheetRef.current;
+    if (!sheet) return;
+
+    const checkOverflow = () => {
+      // A few px of slack: fractional scroll positions on some displays
+      // otherwise leave this permanently "one pixel short of the bottom".
+      setCanScrollMore(sheet.scrollHeight - sheet.scrollTop - sheet.clientHeight > 4);
+    };
+
+    checkOverflow();
+    sheet.addEventListener('scroll', checkOverflow, { passive: true });
+    const observer = new ResizeObserver(checkOverflow);
+    observer.observe(sheet);
+
+    return () => {
+      sheet.removeEventListener('scroll', checkOverflow);
+      observer.disconnect();
+    };
+  }, [open, options]);
 
   return (
     <div className="relative">
@@ -120,6 +147,7 @@ export default function Dropdown({
             />
 
             <div
+              ref={sheetRef}
               role="dialog"
               aria-modal="true"
               aria-labelledby={labelId}
@@ -165,6 +193,23 @@ export default function Dropdown({
                   );
                 })}
               </ul>
+
+              {/* Sticky within the scrolling sheet itself (not the viewport),
+                  so it tracks how much is actually left to scroll rather than
+                  just sitting at a fixed spot. The negative margin pulls it
+                  back over the last option instead of adding extra scroll
+                  height — the standard "sticky fade footer" trick. Only
+                  rendered while there's really more below: once scrolled to
+                  the end it disappears instead of shading the last option
+                  for no reason. */}
+              {canScrollMore && (
+                <div
+                  aria-hidden
+                  className="ds-dropdown-fade pointer-events-none sticky inset-x-0 bottom-0 -mt-14 flex h-14 items-end justify-center bg-gradient-to-t from-white via-white/90 to-transparent"
+                >
+                  <ChevronDown className="ds-scroll-hint mb-1 h-4 w-4 text-amber" />
+                </div>
+              )}
             </div>
           </div>,
           document.body

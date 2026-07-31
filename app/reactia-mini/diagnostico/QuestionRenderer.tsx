@@ -15,6 +15,11 @@ type QuestionRendererProps = {
   errors: FieldErrors<Diagnostico>;
   /** Current value of the main field, to decide whether "otro" is showing. */
   currentValue: unknown;
+  /** Mirrors whether dictation is active on this question's text field up to
+   *  the wizard page, so it can hold off letting the reader advance mid
+   *  dictation — moving on while the mic is still open is what used to
+   *  submit whatever partial value react-hook-form happened to have. */
+  onDictandoChange?: (dictando: boolean) => void;
 };
 
 /**
@@ -33,6 +38,7 @@ export default function QuestionRenderer({
   control,
   errors,
   currentValue,
+  onDictandoChange,
 }: QuestionRendererProps) {
   // Set when a paste is rejected on a `sinPegar` question, so we can explain
   // why the text didn't appear instead of leaving the user thinking it broke.
@@ -51,7 +57,18 @@ export default function QuestionRenderer({
     setPegadoBloqueado(false);
     setDictando(false);
     setInterim('');
+    onDictandoChange?.(false);
+    // Only `question.id` should re-run this — `onDictandoChange` is a fresh
+    // callback identity on every parent render, and depending on it here
+    // would reset dictation state on every keystroke, not just on question
+    // change.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [question.id]);
+
+  const handleDictandoChange = (next: boolean) => {
+    setDictando(next);
+    onDictandoChange?.(next);
+  };
 
   const labelId = `pregunta-${question.id}`;
   const error = errors[question.id]?.message as string | undefined;
@@ -166,6 +183,41 @@ export default function QuestionRenderer({
 
                 return (
                   <div>
+                    {/* Button, help text and counter all on one row — sits
+                        above the textarea so it's the first thing read
+                        rather than something discovered after already
+                        reaching for the keyboard. The help text truncates
+                        rather than wrapping: on a narrow phone it's the
+                        least important of the three, not worth a second
+                        line. */}
+                    <div className="flex items-center justify-between gap-3">
+                      <div className="flex min-w-0 items-center gap-2">
+                        <DictateButton
+                          onTranscript={(chunk) => {
+                            const next = texto ? `${texto} ${chunk}` : chunk;
+                            field.onChange(max ? next.slice(0, max) : next);
+                          }}
+                          onFocusFallback={() => textareaRef.current?.focus()}
+                          onListeningChange={handleDictandoChange}
+                          onInterimChange={setInterim}
+                        />
+                        <p className="truncate text-xs text-stone">
+                          Toca para dictar o escribe abajo con teclado.
+                        </p>
+                      </div>
+
+                      {max && (
+                        <p
+                          id={`${question.id}-contador`}
+                          className={`shrink-0 text-sm tabular-nums ${
+                            texto.length >= max ? 'text-signal-mid' : 'text-stone'
+                          }`}
+                        >
+                          {texto.length}/{max}
+                        </p>
+                      )}
+                    </div>
+
                     <textarea
                       ref={textareaRef}
                       id={question.id}
@@ -193,34 +245,8 @@ export default function QuestionRenderer({
                       onDrop={
                         question.sinPegar ? (event) => event.preventDefault() : undefined
                       }
-                      className="ds-input resize-y"
+                      className="ds-input mt-2 resize-y"
                     />
-
-                    {/* Dictar on the left, the character counter on the
-                        right — opposite ends of the same row so neither
-                        competes with the other for attention. */}
-                    <div className="mt-1.5 flex items-center justify-between gap-3">
-                      <DictateButton
-                        onTranscript={(chunk) => {
-                          const next = texto ? `${texto} ${chunk}` : chunk;
-                          field.onChange(max ? next.slice(0, max) : next);
-                        }}
-                        onFocusFallback={() => textareaRef.current?.focus()}
-                        onListeningChange={setDictando}
-                        onInterimChange={setInterim}
-                      />
-
-                      {max && (
-                        <p
-                          id={`${question.id}-contador`}
-                          className={`shrink-0 text-sm tabular-nums ${
-                            texto.length >= max ? 'text-signal-mid' : 'text-stone'
-                          }`}
-                        >
-                          {texto.length}/{max}
-                        </p>
-                      )}
-                    </div>
 
                     {/* Announced politely rather than as an alert: the user
                         did nothing wrong, they just need to know why nothing

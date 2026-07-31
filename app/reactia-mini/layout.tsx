@@ -1,5 +1,6 @@
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import ScrollHint from '@/components/ui/ScrollHint';
 
 /**
  * Every screen in the funnel shares this frame: navbar, a
@@ -26,6 +27,7 @@ export default function ReactiaMiniLayout({
           that doesn't line up with the content below it. One gutter, one place. */}
       <main className="relative flex flex-1 flex-col">{children}</main>
       <Footer />
+      <ScrollHint />
     </>
   );
 }

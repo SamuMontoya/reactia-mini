@@ -592,6 +592,37 @@
   transform-origin: center;
 }
 
+/* Mobile "you can scroll" cue — a small bounce, not the full-height sweep of
+   ds-float, so it reads as a nudge rather than another moving element
+   competing for attention on an already content-heavy phone screen. */
+@keyframes ds-scroll-hint {
+  0%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.55;
+  }
+  50% {
+    transform: translateY(6px);
+    opacity: 1;
+  }
+}
+.ds-scroll-hint {
+  animation: ds-scroll-hint 1.6s ease-in-out infinite;
+}
+
+/* Positioned off `--scroll-hint-offset` (set by whichever page has its own
+   sticky bottom bar, e.g. the diagnóstico wizard's nav) rather than a bare
+   `bottom-0`/`bottom-4` — so the fade/chevron land just above that bar,
+   where the scrollable content actually ends, instead of fixed to the literal
+   viewport edge and blending into/behind the nav buttons. Defaults to 0 for
+   every page that doesn't set it. */
+.ds-scroll-hint-fade {
+  bottom: var(--scroll-hint-offset, 0px);
+}
+.ds-scroll-hint-chevron {
+  bottom: calc(var(--scroll-hint-offset, 0px) + 1rem);
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

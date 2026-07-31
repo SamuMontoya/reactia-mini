@@ -56,6 +56,14 @@ export default function DiagnosticoPage() {
   const [draftPendiente, setDraftPendiente] = useState<DiagnosticoDraft | null>(null);
   const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved' | 'error'>('idle');
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Mirrors DictateButton's own "listening" state up from whichever texto
+  // question is on screen. "Siguiente" gets disabled while it's true — moving
+  // on mid-dictation used to validate/submit whatever partial value
+  // react-hook-form still had for that field (often `undefined`, since
+  // dictation's own committed text hadn't landed yet), surfacing Zod's raw
+  // "expected string, received undefined" instead of any real page content.
+  const [dictandoActual, setDictandoActual] = useState(false);
+  const navRef = useRef<HTMLDivElement>(null);
 
   const {
     control,
@@ -258,6 +266,10 @@ export default function DiagnosticoPage() {
   }, [paso, trigger, getValues, setError]);
 
   const handleNext = async () => {
+    // Belt-and-suspenders: the button itself is disabled while dictating (see
+    // the nav bar below), but this guards the same path against anything
+    // that could still trigger it — a queued click event, a stray Enter key.
+    if (dictandoActual) return;
     if (!(await validarPasoActual())) return;
 
     setDireccion('adelante');
@@ -330,6 +342,34 @@ export default function DiagnosticoPage() {
   const enResumen = paso.tipo === 'resumen';
   const numeroPaso = enResumen ? TOTAL_PREGUNTAS : paso.index + 1;
   const progreso = (numeroPaso / TOTAL_PREGUNTAS) * 100;
+
+  // Tells the shared ScrollHint how much of the viewport's bottom is actually
+  // this page's own sticky nav bar, so its fade/chevron land just above that
+  // bar — where the scrollable question content really ends — instead of
+  // fixed to the literal viewport edge, underneath/behind the nav buttons.
+  useEffect(() => {
+    const nav = navRef.current;
+    if (!nav) {
+      document.documentElement.style.removeProperty('--scroll-hint-offset');
+      return;
+    }
+
+    const setOffset = () => {
+      document.documentElement.style.setProperty(
+        '--scroll-hint-offset',
+        `${nav.offsetHeight}px`
+      );
+    };
+
+    setOffset();
+    const observer = new ResizeObserver(setOffset);
+    observer.observe(nav);
+
+    return () => {
+      observer.disconnect();
+      document.documentElement.style.removeProperty('--scroll-hint-offset');
+    };
+  }, [listoParaResponder, enResumen]);
 
   return (
     <div className="flex flex-1 flex-col">
@@ -423,6 +463,7 @@ export default function DiagnosticoPage() {
               control={control}
               errors={errors}
               currentValue={valorActual}
+              onDictandoChange={setDictandoActual}
             />
           </div>
         )}
@@ -434,7 +475,12 @@ export default function DiagnosticoPage() {
 
       {/* ── Navigation ── */}
       {listoParaResponder && !enResumen && (
-        <div className="sticky bottom-0 bg-paper/90 backdrop-blur-md">
+        <div ref={navRef} className="sticky bottom-0 bg-paper/90 backdrop-blur-md">
+          {dictandoActual && (
+            <p className="ds-container pt-2 text-center text-sm text-stone">
+              Detén el dictado para continuar.
+            </p>
+          )}
           <div className="ds-container flex items-center justify-between gap-4 py-4">
             <button
               type="button"
@@ -446,7 +492,12 @@ export default function DiagnosticoPage() {
               {volverAResumen ? 'Cancelar' : 'Anterior'}
             </button>
 
-            <button type="button" onClick={handleNext} className="ds-btn ds-btn-amber">
+            <button
+              type="button"
+              onClick={handleNext}
+              disabled={dictandoActual}
+              className="ds-btn ds-btn-amber"
+            >
               {volverAResumen
                 ? 'Guardar y volver'
                 : paso.index === TOTAL_PREGUNTAS - 1

@@ -62,7 +62,7 @@ export const diagnosticoSchema = z
     }),
     modelo_tipo_negocio_otro: otroTexto.optional(),
     descripcion_negocio: z
-      .string()
+      .string({ message: 'Cuéntanos un poco sobre tu negocio' })
       .trim()
       .min(10, 'Cuéntanos un poco más — con una o dos frases basta'),
     ticket_promedio_cop: z
@@ -102,7 +102,7 @@ export const diagnosticoSchema = z
 
     // Cualitativo
     mayor_frustracion: z
-      .string()
+      .string({ message: 'Cuéntanos qué te frustra hoy' })
       .trim()
       .min(10, 'Cuéntanos un poco más — con una o dos frases basta'),
   })

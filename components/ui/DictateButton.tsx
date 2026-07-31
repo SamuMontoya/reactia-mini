@@ -105,6 +105,10 @@ export default function DictateButton({
   const recognitionRef = useRef<SpeechRecognitionLike | null>(null);
   const gotResultRef = useRef(false);
   const noResultTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // The latest not-yet-final guess, kept outside React state so `stop` can
+  // read it synchronously without waiting on a render. See `stop` for why
+  // this is what actually gets committed on a manual stop.
+  const lastInterimRef = useRef('');
 
   useEffect(() => {
     setSupported(!!getSpeechRecognitionCtor() && window.isSecureContext);
@@ -124,9 +128,36 @@ export default function DictateButton({
     window.setTimeout(() => setHint(null), 6000);
   };
 
+  // The interim preview is the last thing the reader actually saw on screen.
+  // Committing it here — rather than trusting the engine to still deliver a
+  // final result on its own — is what stops a stop, a natural WebKit cutoff,
+  // or a mid-session error from silently dropping whatever was already
+  // recognised but never went final.
+  const commitPending = () => {
+    const pending = lastInterimRef.current.trim();
+    lastInterimRef.current = '';
+    if (pending) onTranscript(pending);
+  };
+
   const stop = () => {
     clearNoResultTimer();
-    recognitionRef.current?.stop();
+
+    const recognition = recognitionRef.current;
+    if (recognition) {
+      // Detach before stopping: `.stop()` is supposed to still deliver a
+      // final result for whatever's been recognised so far, but that isn't
+      // reliable enough in practice (WebKit in particular) to depend on —
+      // and if it DOES still fire after this, it must not double-commit on
+      // top of `commitPending` below. This session is over the moment the
+      // user taps to end it; nothing it reports afterwards should land
+      // anywhere.
+      recognition.onresult = null;
+      recognition.onerror = null;
+      recognition.onend = null;
+      recognition.stop();
+    }
+
+    commitPending();
     setListening(false);
     onInterimChange?.('');
   };
@@ -168,6 +199,7 @@ export default function DictateButton({
       }
 
       if (finalText.trim()) {
+        lastInterimRef.current = '';
         onTranscript(finalText.trim());
         onInterimChange?.('');
         // Explicit, rather than waiting on the browser's own `onend` timing:
@@ -178,6 +210,7 @@ export default function DictateButton({
         // (and drops the OS mic indicator) right away instead of lingering.
         recognitionRef.current?.stop();
       } else {
+        lastInterimRef.current = interimText;
         onInterimChange?.(interimText);
       }
     };
@@ -185,6 +218,7 @@ export default function DictateButton({
     recognition.onerror = (event) => {
       if (event.error === 'no-speech') return; // onend right after covers this
       clearNoResultTimer();
+      commitPending();
       setListening(false);
       onInterimChange?.('');
 
@@ -198,6 +232,11 @@ export default function DictateButton({
 
     recognition.onend = () => {
       clearNoResultTimer();
+      // Covers WebKit cutting the session short on its own (see the
+      // component doc comment): `onresult` may have only ever delivered
+      // interim text, never a final result, and without this it would just
+      // vanish here instead of landing in the field.
+      commitPending();
       setListening(false);
       onInterimChange?.('');
       if (!gotResultRef.current) {
@@ -209,6 +248,7 @@ export default function DictateButton({
 
     recognitionRef.current = recognition;
     gotResultRef.current = false;
+    lastInterimRef.current = '';
     setHint(null);
 
     try {
@@ -230,10 +270,8 @@ export default function DictateButton({
         type="button"
         onClick={handleClick}
         aria-pressed={supported ? listening : undefined}
-        className={`flex shrink-0 items-center gap-1.5 rounded-full border px-3 py-1.5 text-sm font-semibold transition-colors ${
-          listening
-            ? 'border-amber bg-amber text-white'
-            : 'border-dust text-stone hover:border-amber hover:text-amber'
+        className={`flex shrink-0 items-center gap-1.5 rounded-full border border-amber px-3 py-1.5 text-sm font-semibold text-white transition-colors ${
+          listening ? 'bg-amber-dim' : 'bg-amber hover:bg-amber-dim'
         }`}
       >
         {listening ? (
