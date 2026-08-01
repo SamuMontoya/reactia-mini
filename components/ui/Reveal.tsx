@@ -20,9 +20,17 @@ export default function Reveal({ children, delay = 0, className = '' }: RevealPr
   const { ref, inView } = useInView();
 
   return (
+    // `min-w-0`: this wrapper is almost always the direct child of a grid or
+    // flex container, and such an item defaults to `min-width: auto` — it
+    // refuses to shrink below its own min-content. Any `truncate` inside sets
+    // `white-space: nowrap`, which makes that min-content the full
+    // untruncated string, so the item stayed wider than its column and pushed
+    // the page into horizontal scroll (the diagnóstico cards did exactly this
+    // at 320px). Outside flex/grid `min-width: auto` already resolves to 0,
+    // so this changes nothing anywhere else.
     <div
       ref={ref}
-      className={`ds-reveal ${inView ? 'ds-reveal-in' : ''} ${className}`}
+      className={`ds-reveal min-w-0 ${inView ? 'ds-reveal-in' : ''} ${className}`}
       style={delay ? { transitionDelay: `${delay}ms` } : undefined}
     >
       {children}

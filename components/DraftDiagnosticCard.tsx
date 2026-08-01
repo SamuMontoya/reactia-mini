@@ -28,7 +28,14 @@ export function DraftDiagnosticCard({
   return (
     <Link
       href={`/reactia-mini/diagnostico?leadId=${leadId}`}
-      className="group ds-card relative flex h-full flex-col overflow-hidden border-dashed border-amber/40 bg-gradient-to-br from-white to-amber/[0.03] p-5 transition-all duration-300 ease-[var(--ease-brand)] hover:-translate-y-1 hover:border-amber hover:shadow-[var(--shadow-lg)]"
+      // `min-w-0` is load-bearing, not cosmetic: a grid item defaults to
+      // `min-width: auto`, i.e. it refuses to shrink below its own min-content
+      // — and the `truncate` further down sets `white-space: nowrap`, which
+      // makes that min-content the FULL untruncated string. Without this the
+      // card stayed ~321px wide inside a 280px column on a 320px phone and
+      // took the whole page into horizontal scroll, with the truncation never
+      // kicking in at all.
+      className="group ds-card relative flex h-full min-w-0 flex-col overflow-hidden border-dashed border-amber/40 bg-gradient-to-br from-white to-amber/[0.03] p-5 transition-all duration-300 ease-[var(--ease-brand)] hover:-translate-y-1 hover:border-amber hover:shadow-[var(--shadow-lg)]"
     >
       <span className="ds-label absolute right-4 top-4 rounded-full bg-amber/10 px-3 py-1 font-semibold text-amber">
         Borrador

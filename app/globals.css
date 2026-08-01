@@ -250,13 +250,23 @@
     font-weight: 700;
     font-size: var(--text-base);
     letter-spacing: 0.01em;
-    padding: 0.875rem 1.5rem;
+    /* Tighter side padding on narrow phones. Two of these sitting in one row
+       (the diagnóstico wizard's Anterior / Siguiente nav) overflowed the
+       container at 390px and pushed the primary button past the right edge,
+       taking the whole page into horizontal scroll with it. Vertical padding
+       is untouched, so the touch target keeps its height. */
+    padding: 0.875rem 1.125rem;
     transition:
       background-color 0.18s var(--ease-brand),
       color 0.18s var(--ease-brand),
       border-color 0.18s var(--ease-brand),
       box-shadow 0.18s var(--ease-brand),
       transform 0.12s var(--ease-brand);
+  }
+  @media (width >= 40rem) {
+    .ds-btn {
+      padding-inline: 1.5rem;
+    }
   }
   .ds-btn:active {
     transform: translateY(1px);

@@ -41,7 +41,7 @@ describe('QuestionRenderer — pregunta de texto', () => {
     render(<Harness />);
 
     const boton = screen.getByRole('button', { name: /dictar/i });
-    const ayuda = screen.getByText(/toca para dictar o escribe abajo con teclado/i);
+    const ayuda = screen.getByText(/^toca para dictar$/i);
     const contador = screen.getByText('0/280');
     const textarea = screen.getByRole('textbox');
 
@@ -62,11 +62,33 @@ describe('QuestionRenderer — pregunta de texto', () => {
     render(<Harness />);
 
     const boton = screen.getByRole('button', { name: /dictar/i });
-    const ayuda = screen.getByText(/toca para dictar o escribe abajo con teclado/i);
+    const ayuda = screen.getByText(/^toca para dictar$/i);
 
     // Same immediate parent row — the layout this test guards against
     // regressing is the button and help text stacking on separate lines.
     expect(boton.closest('span')?.parentElement).toBe(ayuda.parentElement);
+  });
+
+  it('muestra cómo activar el dictado en iPhone, con ícono, arriba del textarea', () => {
+    render(<Harness />);
+
+    const ayudaIphone = screen.getByText(
+      /en iPhone activa el dictado en Ajustes › General › Teclado › Dictado/i
+    );
+    const textarea = screen.getByRole('textbox');
+
+    expect(ayudaIphone).toBeInTheDocument();
+    // Above the field, not below it: under the textarea this landed inside
+    // the page's bottom fade and behind the sticky nav.
+    expect(
+      ayudaIphone.compareDocumentPosition(textarea) & Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+
+    // The gear glyph rides along in the same block, and can't be squashed by
+    // the wrapping text beside it.
+    const icono = ayudaIphone.closest('p')?.querySelector('svg');
+    expect(icono).toBeTruthy();
+    expect(icono?.getAttribute('class')).toContain('shrink-0');
   });
 
   it('avisa al padre cuando el dictado empieza y termina, vía onDictandoChange', () => {

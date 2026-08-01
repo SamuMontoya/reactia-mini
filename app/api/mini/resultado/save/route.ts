@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { callGroqScoring } from '@/lib/api/scoring';
+import { callScoring } from '@/lib/api/scoring';
 import { saveResultado } from '@/lib/api/resultados';
 import { getErrorMessage } from '@/lib/getErrorMessage';
 
@@ -10,9 +10,11 @@ export async function POST(req: NextRequest) {
 
     let scoringResult;
     try {
-      scoringResult = await callGroqScoring(diagnosticoId, respuestas);
-    } catch (groqError) {
-      return NextResponse.json({ error: getErrorMessage(groqError) }, { status: 502 });
+      // Groq first, OpenRouter as fallback — see callScoring. A 502 here now
+      // means BOTH providers failed, not just the primary one.
+      scoringResult = await callScoring(diagnosticoId, respuestas);
+    } catch (scoringError) {
+      return NextResponse.json({ error: getErrorMessage(scoringError) }, { status: 502 });
     }
 
     const result = await saveResultado(diagnosticoId, scoringResult);

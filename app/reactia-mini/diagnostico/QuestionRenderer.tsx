@@ -7,7 +7,7 @@ import OptionCards from '@/components/ui/OptionCards';
 import ScaleInput from '@/components/ui/ScaleInput';
 import CurrencyInput from '@/components/ui/CurrencyInput';
 import DictateButton from '@/components/ui/DictateButton';
-import { AREA_ICONS, Alert } from '@/components/icons';
+import { AREA_ICONS, Alert, Gear } from '@/components/icons';
 
 type QuestionRendererProps = {
   question: DiagnosticoQuestion;
@@ -201,9 +201,11 @@ export default function QuestionRenderer({
                           onListeningChange={handleDictandoChange}
                           onInterimChange={setInterim}
                         />
-                        <p className="truncate text-xs text-stone">
-                          Toca para dictar o escribe abajo con teclado.
-                        </p>
+                        {/* Short enough to survive a 390px row next to the
+                            button and the counter without truncating
+                            mid-word — the "or type" half of the message is
+                            carried by the field's own placeholder. */}
+                        <p className="truncate text-xs text-stone">Toca para dictar</p>
                       </div>
 
                       {max && (
@@ -217,6 +219,23 @@ export default function QuestionRenderer({
                         </p>
                       )}
                     </div>
+
+                    {/* Where to turn dictation on when the button seems dead:
+                        on iOS the Web Speech API just returns nothing when
+                        Dictado is off at the OS level, which reads as a broken
+                        button rather than a setting. Sits above the field, not
+                        below it — under the textarea it landed inside the
+                        page's bottom fade and behind the sticky nav on the
+                        longer questions. `items-start` + `shrink-0` keep the
+                        path wrapping under itself instead of pushing out of
+                        the card on a narrow phone. */}
+                    <p className="mt-1.5 flex items-start gap-1.5 text-xs leading-snug text-stone">
+                      <Gear className="mt-[2px] h-3.5 w-3.5 shrink-0" />
+                      <span>
+                        ¿No responde? En iPhone activa el dictado en Ajustes › General ›
+                        Teclado › Dictado.
+                      </span>
+                    </p>
 
                     <textarea
                       ref={textareaRef}
@@ -245,7 +264,7 @@ export default function QuestionRenderer({
                       onDrop={
                         question.sinPegar ? (event) => event.preventDefault() : undefined
                       }
-                      className="ds-input mt-2 resize-y"
+                      className="ds-input mt-1.5 resize-y"
                     />
 
                     {/* Announced politely rather than as an alert: the user

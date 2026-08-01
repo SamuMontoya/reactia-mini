@@ -36,7 +36,10 @@ export function DiagnosticCard({ diagnostico }: DiagnosticCardProps) {
   return (
     <Link
       href={destino}
-      className="group ds-card relative flex h-full flex-col overflow-hidden bg-gradient-to-br from-white to-amber/[0.04] p-5 transition-all duration-300 ease-[var(--ease-brand)] hover:-translate-y-1 hover:border-amber hover:shadow-[var(--shadow-lg)]"
+      // See DraftDiagnosticCard for why `min-w-0` matters here: grid items
+      // won't shrink past their min-content, and the `truncate` below makes
+      // that the full untruncated string.
+      className="group ds-card relative flex h-full min-w-0 flex-col overflow-hidden bg-gradient-to-br from-white to-amber/[0.04] p-5 transition-all duration-300 ease-[var(--ease-brand)] hover:-translate-y-1 hover:border-amber hover:shadow-[var(--shadow-lg)]"
     >
       {/* Amber rule that draws itself along the top edge on hover — the same
           accent-on-action motif the landing's step cards use. */}

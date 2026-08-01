@@ -85,7 +85,7 @@ test.describe('Botón de dictado en preguntas de texto', () => {
     await abrirPreguntaDeTexto(page);
 
     const boton = page.getByRole('button', { name: 'Dictar' });
-    const ayuda = page.getByText('Toca para dictar o escribe abajo con teclado.');
+    const ayuda = page.getByText('Toca para dictar', { exact: true });
     const textarea = page.getByRole('textbox');
 
     await expect(boton).toBeVisible();

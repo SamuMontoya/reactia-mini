@@ -498,11 +498,23 @@ export default function DiagnosticoPage() {
               disabled={dictandoActual}
               className="ds-btn ds-btn-amber"
             >
-              {volverAResumen
-                ? 'Guardar y volver'
-                : paso.index === TOTAL_PREGUNTAS - 1
-                  ? 'Revisar respuestas'
-                  : 'Siguiente'}
+              {/* Shortened on narrow phones: "Revisar respuestas" next to
+                  "Anterior" is what overflowed the row at 390px. The review
+                  screen it leads to is titled "Revisa tus respuestas", so the
+                  short label loses nothing. */}
+              {volverAResumen ? (
+                <>
+                  <span className="sm:hidden">Guardar</span>
+                  <span className="hidden sm:inline">Guardar y volver</span>
+                </>
+              ) : paso.index === TOTAL_PREGUNTAS - 1 ? (
+                <>
+                  <span className="sm:hidden">Revisar</span>
+                  <span className="hidden sm:inline">Revisar respuestas</span>
+                </>
+              ) : (
+                'Siguiente'
+              )}
               <ArrowRight className="h-5 w-5" />
             </button>
           </div>
